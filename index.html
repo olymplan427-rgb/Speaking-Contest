@@ -1,235 +1,168 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>수학말하기대회 AI 심사 시스템</title>
+<title>수학말하기대회 AI 심사 시스템 | 제9회 올림피아드수학</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-:root{--cp:#111827;--cs:#6B7280;--ci:#2563EB;--cg:#16A34A;--ca:#D97706;
-  --bp:#fff;--bs:#F9FAFB;--bi:#EFF6FF;--bg:#F0FDF4;--ba:#FFFBEB;
-  --bt:#E5E7EB;--b2:#D1D5DB;--r:7px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-@media(prefers-color-scheme:dark){:root{--cp:#F9FAFB;--cs:#9CA3AF;--ci:#60A5FA;--cg:#4ADE80;--ca:#FCD34D;
-  --bp:#1F2937;--bs:#111827;--bi:#172554;--bg:#14532D;--ba:#2D2000;--bt:#374151;--b2:#4B5563}}
+:root{--cp:#111827;--cs:#6B7280;--ci:#2563EB;--cg:#16A34A;--bp:#FFFFFF;--bs:#F9FAFB;--bi:#EFF6FF;--bg:#F0FDF4;--bt:#E5E7EB;--b2:#D1D5DB;--bic:#BFDBFE;--bgc:#BBF7D0;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+@media(prefers-color-scheme:dark){:root{--cp:#F9FAFB;--cs:#9CA3AF;--ci:#60A5FA;--cg:#4ADE80;--bp:#1F2937;--bs:#111827;--bi:#172554;--bg:#14532D;--bt:#374151;--b2:#4B5563;--bic:#1E3A5F;--bgc:#166534;}}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--font);font-size:13px}
-.view{display:none;min-height:100vh}.view.on{display:flex;flex-direction:column}
-#v3.on{overflow:hidden;height:100vh}
-
-/* ── MODAL ── */
-.ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:none;align-items:center;justify-content:center}
-.ov.on{display:flex}
-.od{background:var(--bp);border-radius:12px;padding:24px;width:90%;max-width:440px;border:.5px solid var(--bt)}
-.od h2{font-size:15px;font-weight:600;margin-bottom:6px}
-.od p{font-size:12px;color:var(--cs);line-height:1.7;margin-bottom:12px}
-.oi{width:100%;padding:8px 11px;border-radius:var(--r);border:.5px solid var(--b2);background:var(--bs);color:var(--cp);font-size:13px;font-family:monospace;margin-bottom:10px}
-.oi:focus{outline:none;border-color:var(--ci)}
-.onote{font-size:10px;color:var(--cs);line-height:1.6;padding:7px 9px;background:var(--bs);border-radius:6px;margin-bottom:12px}
-.onote a{color:var(--ci)}
-
-/* ── UPLOAD ── */
+.view{display:none;height:100vh;overflow-y:auto}.view.on{display:flex;flex-direction:column}
+.mb{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;display:none;align-items:center;justify-content:center}.mb.on{display:flex}
+.md{background:var(--bp);border-radius:14px;padding:28px 24px;width:90%;max-width:440px;border:.5px solid var(--bt)}
+.md h2{font-size:16px;margin-bottom:6px}.md p{font-size:12px;color:var(--cs);line-height:1.7;margin-bottom:14px}
+.minp{width:100%;padding:9px 12px;border-radius:8px;border:.5px solid var(--b2);background:var(--bs);color:var(--cp);font-size:13px;font-family:inherit;margin-bottom:10px}
+.minp:focus{outline:none;border-color:var(--ci)}
+.mnote{font-size:10px;color:var(--cs);line-height:1.6;padding:8px 10px;background:var(--bs);border-radius:7px;margin-bottom:12px}
+.mrow{display:flex;gap:6px;justify-content:flex-end}.mnote a{color:var(--ci)}
+/* Upload */
 .upw{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;gap:20px;min-height:100vh}
-.upz{width:100%;max-width:500px;border:2px dashed var(--b2);border-radius:12px;padding:36px 24px;text-align:center;cursor:pointer;transition:all .2s}
-.upz:hover,.upz.drag{border-color:var(--ci);background:var(--bi)}
-.upz h2{font-size:18px;font-weight:500;margin:10px 0 6px}
-.upz p{font-size:12px;color:var(--cs);line-height:1.6}
-.ctags{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:10px}
+.upz{width:100%;max-width:500px;border:2px dashed var(--b2);border-radius:12px;padding:36px 24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bp)}
+.upz:hover,.upz.drag{border-color:var(--bic);background:var(--bi)}
+.upz h2{font-size:18px;font-weight:500;margin:10px 0 5px}.upz p{font-size:12px;color:var(--cs);line-height:1.6}
+.ctags{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px}
 .ct{font-size:10px;padding:2px 8px;border-radius:20px;background:var(--bs);border:.5px solid var(--bt);color:var(--cs)}
-
-/* ── REVIEW ── */
+/* Review */
 .rvw{padding:16px;display:flex;flex-direction:column;gap:12px;max-width:1000px;margin:0 auto;width:100%}
-.sg4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.sb{padding:10px 12px;border-radius:8px;border:.5px solid var(--bt);text-align:center}
+.rvh{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.sb{padding:10px 12px;border-radius:8px;border:.5px solid var(--bt);background:var(--bp);text-align:center}
 .sbn{font-size:24px;font-weight:500;color:var(--ci)}.sbl{font-size:10px;color:var(--cs);margin-top:2px}
 .rtb{border:.5px solid var(--bt);border-radius:8px;overflow:hidden}
 .rth{display:grid;grid-template-columns:36px 1fr 1fr 60px 60px 50px;background:var(--bs);border-bottom:.5px solid var(--bt);font-size:11px;font-weight:500}
 .rth div,.rr div{padding:6px 8px}
 .rr{display:grid;grid-template-columns:36px 1fr 1fr 60px 60px 50px;border-bottom:.5px solid var(--bt);font-size:11px;cursor:pointer;transition:background .1s}
 .rr:last-child{border-bottom:none}.rr:hover{background:var(--bs)}
-.rtbd{max-height:280px;overflow-y:auto}
-.stbtn{padding:14px;background:#1d6f42;color:white;border:none;cursor:pointer;border-radius:8px;font-size:15px;font-weight:500;width:100%}
-
-/* ── JUDGE LAYOUT ── */
-.jl{display:grid;grid-template-columns:280px 1fr;height:100vh;overflow:hidden}
-
-/* ── LEFT PANEL ── */
+.rtbd{max-height:260px;overflow-y:auto}
+.stbtn{padding:14px 0;background:#1d6f42;color:white;border:none;cursor:pointer;border-radius:9px;font-size:15px;font-weight:500;width:100%;transition:background .15s}.stbtn:hover{background:#155131}
+/* Judge layout */
+#v3.on{overflow:hidden}
+.jl{display:grid;grid-template-columns:290px 1fr;height:100vh;overflow:hidden}
 .jlft{border-right:.5px solid var(--bt);background:var(--bs);padding:10px;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
 .vbx{position:relative;width:100%;aspect-ratio:16/9;background:#111;border-radius:7px;overflow:hidden}
 .vbx video{width:100%;height:100%;object-fit:contain}
 .vph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#777;font-size:11px;background:var(--bp);border-radius:7px}
-.seg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
-.sgb{padding:4px 3px;border-radius:6px;border:.5px solid var(--bt);background:var(--bp);cursor:pointer;font-size:10px;text-align:center;font-family:inherit;transition:background .1s}
-.sgb:hover{background:var(--bs)}.sgb.act{background:var(--bi);border-color:var(--ci);color:var(--ci)}
-.sgb .sst{font-size:9px;color:var(--cs);display:block}
 .lbl{font-size:10px;color:var(--cs);font-weight:500;display:block;margin-bottom:2px}
 .inp{padding:4px 7px;border-radius:6px;border:.5px solid var(--bt);background:var(--bp);color:var(--cp);font-size:11px;font-family:inherit;width:100%}
 .inp:focus{outline:none;border-color:var(--ci)}
-.rw{display:flex;gap:5px;align-items:center}
-.sc-card{background:var(--bp);border:.5px solid var(--bt);border-radius:7px;padding:8px 10px}
+.row{display:flex;gap:5px;align-items:center}
+.sc{background:var(--bp);border:.5px solid var(--bt);border-radius:7px;padding:8px 10px}
 .sr{display:flex;justify-content:space-between;padding:2px 0;font-size:10px}.sr+.sr{border-top:.5px solid var(--bt)}
-.tot-c{margin-top:6px;text-align:center;padding:8px;background:var(--bi);border-radius:6px}
-.tot-n{font-size:28px;font-weight:600;color:var(--ci);line-height:1}
-.prf{background:var(--bp);border:.5px solid var(--bt);border-radius:7px;overflow:hidden}
-.prfh{display:flex;align-items:center;gap:5px;padding:6px 8px;cursor:pointer;font-size:11px;font-weight:500;background:var(--bs)}
-.prfh:hover{background:var(--bp)}.prfb{padding:8px;display:none}.prfb.op{display:block}
-.tls{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:4px}
-.ttag{font-size:9px;padding:1px 5px;border-radius:20px;background:var(--bi);color:var(--ci)}
-.ans{padding:4px 7px;background:#EAF3DE;border-radius:5px;font-size:10px;font-weight:600;color:#3B6D11;margin-bottom:3px}
-.kp{padding:4px 7px;background:var(--bs);border-radius:5px;font-size:10px;color:var(--cs);line-height:1.5}
-@media(prefers-color-scheme:dark){.ans{background:#173404;color:#97C459}}
-
-/* ── RIGHT PANEL ── */
+.tot{margin-top:5px;text-align:center;padding:6px;background:var(--bi);border-radius:6px}
+.tn{font-size:26px;font-weight:500;color:var(--ci);line-height:1}
+/* Right */
 .jrgt{display:flex;flex-direction:column;height:100vh;overflow:hidden}
-.jtop{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid var(--bt);background:var(--bs);flex-shrink:0;flex-wrap:wrap}
-.pbr{flex:1;height:5px;background:var(--bt);border-radius:3px;overflow:hidden;min-width:60px}
-.pbf{height:100%;background:var(--ci);border-radius:3px;transition:width .3s}
-.jmain{flex:1;overflow-y:auto;padding:12px}
-
-/* ── AI RUN AREA ── */
-.aibox{padding:11px 13px;background:var(--bi);border-radius:9px;display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.aibox-info{flex:1}
-.aibox-title{font-size:12px;font-weight:600;color:var(--ci)}
-.aibox-sub{font-size:10px;color:var(--cs);margin-top:2px}
-.ai-run-btn{padding:9px 20px;background:var(--ci);color:white;border:none;cursor:pointer;border-radius:7px;font-size:13px;font-weight:600;font-family:inherit;white-space:nowrap;transition:opacity .15s}
-.ai-run-btn:hover{opacity:.9}.ai-run-btn:disabled{opacity:.6;cursor:not-allowed}
-.ai-prog{font-size:10px;color:var(--cs);margin-top:6px;display:none}
-.ai-prog-bar{height:4px;background:var(--bt);border-radius:2px;overflow:hidden;margin-top:4px}
-.ai-prog-fill{height:100%;background:var(--ci);border-radius:2px;transition:width .4s}
-
-/* ── SCORE SECTIONS ── */
-.ssec{border:.5px solid var(--bt);border-radius:8px;overflow:hidden;margin-bottom:8px}
-.ssec-h{display:flex;align-items:center;gap:7px;padding:9px 12px;background:var(--bs);font-size:12px;font-weight:600;cursor:pointer}
-.ssec-pts{margin-left:auto;font-size:14px;font-weight:700;color:var(--ci)}
-.ssec-badge{font-size:9px;padding:1px 6px;border-radius:20px;font-weight:500}
-.bai{background:#EAF3DE;color:#3B6D11}.bq{background:var(--bi);color:var(--ci)}
-@media(prefers-color-scheme:dark){.bai{background:#173404;color:#97C459}}
-.ssec-b{padding:10px;display:none}.ssec-b.op{display:block}
-
-/* ── SCORE ITEMS ── */
-.si{padding:8px 9px;background:var(--bs);border-radius:6px;margin-bottom:6px}
-.si:last-child{margin-bottom:0}
-.si-top{display:flex;align-items:center;gap:7px;margin-bottom:3px}
-.si-name{font-size:11px;font-weight:500;width:70px;flex-shrink:0}
-.si-bar{flex:1;height:7px;background:var(--bt);border-radius:4px;overflow:hidden}
-.si-fill{height:100%;background:var(--ci);border-radius:4px;transition:width .6s ease}
-.si-pts{font-size:13px;font-weight:700;width:36px;text-align:right;color:var(--ci)}
-.si-reason{font-size:10px;color:var(--cs);line-height:1.5;padding:4px 6px;background:var(--bp);border-radius:5px}
-.si-miss{margin-top:3px}
-.miss-tag{font-size:9px;padding:1px 5px;border-radius:20px;background:#FEF2F2;color:#991B1B;margin-right:3px;margin-bottom:2px;display:inline-block}
-@media(prefers-color-scheme:dark){.miss-tag{background:#3B0D0D;color:#FCA5A5}}
-.si-adj{display:flex;align-items:center;gap:6px;margin-top:5px;padding-top:5px;border-top:.5px solid var(--bt)}
-.si-adj-lbl{font-size:10px;color:var(--cs);white-space:nowrap}
-.si-adj input[type=range]{flex:1;cursor:pointer}
-.si-adj-val{font-size:12px;font-weight:600;min-width:20px;text-align:right;color:var(--ci)}
-
-/* ── TIME SCORE SPECIAL ── */
-.si.ts-ok{background:var(--bg)}
-.si.ts-ok .si-fill{background:var(--cg)}
-.si.ts-ok .si-pts{color:var(--cg)}
-
-/* ── PERSONA CARDS ── */
-.persona{padding:10px 11px;border-radius:7px;margin-bottom:6px;border:.5px solid var(--bt)}
-.persona.p1{background:#EDF4FF}
-.persona.p2{background:#EDF7F2}
-.persona.p3{background:#FFF9ED}
-@media(prefers-color-scheme:dark){.persona.p1{background:#0D2147}.persona.p2{background:#0A2618}.persona.p3{background:#2D1E00}}
-.p-head{display:flex;align-items:flex-start;gap:9px}
-.p-emoji{font-size:20px;flex-shrink:0}
-.p-meta{flex:1}
-.p-name{font-size:12px;font-weight:600}
-.p-sub{font-size:10px;color:var(--cs)}
-.p-score-area{text-align:right;flex-shrink:0}
-.p-score-big{font-size:20px;font-weight:700;color:var(--ci)}
-.p-score-sub{font-size:9px;color:var(--cs)}
-.p-scores-row{display:flex;gap:6px;margin-top:4px}
-.p-score-chip{font-size:11px;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,.5);font-weight:600}
-.p-reason{font-size:10px;color:var(--cs);line-height:1.6;margin-top:6px;padding:5px 7px;background:rgba(255,255,255,.4);border-radius:5px}
-@media(prefers-color-scheme:dark){.p-reason{background:rgba(255,255,255,.05)}.p-score-chip{background:rgba(255,255,255,.1)}}
-.coach-fb{font-size:11px;color:var(--cp);line-height:1.7;margin-top:6px;padding:8px 10px;background:rgba(255,255,255,.4);border-radius:5px;white-space:pre-wrap}
-@media(prefers-color-scheme:dark){.coach-fb{background:rgba(255,255,255,.05)}}
-
-/* ── TOTAL ── */
-.tot-sec{text-align:center;padding:14px;background:var(--bi);border-radius:9px;margin-bottom:10px}
-.tot-big{font-size:48px;font-weight:700;color:var(--ci);line-height:1}
-.tot-grade{font-size:14px;font-weight:600;margin-top:5px}
-.tot-breakdown{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
-.tb-c{padding:6px;background:rgba(255,255,255,.4);border-radius:6px;text-align:center}
-.tb-n{font-size:16px;font-weight:700;color:var(--ci)}
-.tb-l{font-size:9px;color:var(--cs);margin-top:1px}
-@media(prefers-color-scheme:dark){.tb-c{background:rgba(255,255,255,.05)}}
-
-/* ── BUTTONS ── */
+.jtop{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid var(--bt);background:var(--bs);flex-wrap:wrap;flex-shrink:0}
+.pb{flex:1;height:5px;background:var(--bs);border-radius:3px;overflow:hidden;border:.5px solid var(--bt);min-width:60px}
+.pf{height:100%;background:var(--ci);border-radius:3px;transition:width .3s}
+.stpc{flex:1;overflow-y:auto;padding:12px}
+/* Score card */
+.scard{border:.5px solid var(--bt);border-radius:8px;overflow:hidden;margin-bottom:10px}
+.scardh{display:flex;align-items:center;gap:8px;padding:9px 12px;font-size:12px;font-weight:500;border-bottom:.5px solid var(--bt)}
+.scardb{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.srow{display:flex;align-items:center;gap:8px}
+.slabel{font-size:11px;color:var(--cs);min-width:80px}
+.sval{font-size:16px;font-weight:600;color:var(--ci);min-width:28px;text-align:right}
+.smax{font-size:10px;color:var(--cs)}
+.slr2{flex:1;display:flex;align-items:center;gap:6px}
+.slr2 input[type=range]{flex:1;accent-color:var(--ci)}
+.reason-box{background:var(--bs);border-radius:6px;padding:8px 10px;font-size:11px;line-height:1.7;color:var(--cp);border:.5px solid var(--bt);white-space:pre-wrap;min-height:36px}
+.reason-box[contenteditable=true]:focus{outline:none;border-color:var(--ci)}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:500}
+.badge-blue{background:var(--bi);color:var(--ci)}
+.badge-green{background:var(--bg);color:var(--cg)}
+.badge-orange{background:#FEF9C3;color:#92400E}
+.badge-red{background:#FEF2F2;color:#991B1B}
+@media(prefers-color-scheme:dark){.badge-orange{background:#412402;color:#FAC775}.badge-red{background:#3B0D0D;color:#FCA5A5}}
+/* Section header colors */
+.sh-blue{background:#EDF4FF;color:#185FA5}
+.sh-green{background:#EDF7F2;color:#0F6E56}
+.sh-orange{background:#FFF9ED;color:#854F0B}
+.sh-purple{background:#F5F3FF;color:#6D28D9}
+@media(prefers-color-scheme:dark){.sh-blue{background:#042C53;color:#85B7EB}.sh-green{background:#04342C;color:#5DCAA5}.sh-orange{background:#412402;color:#FAC775}.sh-purple{background:#2E1065;color:#C4B5FD}}
+/* Captures preview */
+.cap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:4px}
+.cap-img{width:100%;aspect-ratio:16/9;border-radius:5px;object-fit:cover;border:.5px solid var(--bt);background:#111}
+.cap-lbl{font-size:9px;color:var(--cs);text-align:center;margin-top:2px}
+/* Final */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.fc{text-align:center;padding:8px;background:var(--bs);border-radius:6px}
+.fn{font-size:20px;font-weight:500}.fl{font-size:10px;color:var(--cs);margin-bottom:2px}
+.ftot{text-align:center;padding:14px;background:var(--bi);border-radius:8px}
+.fb{font-size:42px;font-weight:500;color:var(--ci);line-height:1}
+.dv{border:none;border-top:.5px solid var(--bt);margin:6px 0}
+/* Buttons */
 .btn{padding:6px 12px;border-radius:6px;border:.5px solid var(--b2);cursor:pointer;font-size:12px;font-family:inherit;transition:all .15s}
 .bpr{background:var(--ci);color:white;border-color:var(--ci)}.bpr:hover{opacity:.9}
-.bgr{background:#1d6f42;color:white;border-color:#1d6f42}.bgr:hover{background:#155131}
 .bsc{background:var(--bs)}.bsc:hover{background:var(--bp)}
 .bxl{background:#1d6f42;color:white;border-color:#1d6f42}
-.save-btn{width:100%;padding:13px;background:#1d6f42;color:white;border:none;cursor:pointer;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;transition:background .15s}
-.save-btn:hover{background:#155131}
-
-/* ── 불일치 감지 ── */
-.si.mismatch{border-left:3px solid var(--ca)}
-.si-alert{display:flex;align-items:center;gap:6px;margin-top:5px;padding:5px 7px;background:var(--ba);border-radius:5px;font-size:10px;color:var(--ca)}
-.si-alert-msg{flex:1}
-.recal-btn{padding:2px 8px;border-radius:4px;border:.5px solid var(--ca);background:transparent;cursor:pointer;font-size:10px;color:var(--ca);font-family:inherit;white-space:nowrap}
-.recal-btn:hover{background:var(--ca);color:white}
-.recal-btn:disabled{opacity:.5;cursor:wait}
-
-/* ── LOADING SKELETON ── */
-.skel{background:linear-gradient(90deg,var(--bt) 25%,var(--bs) 50%,var(--bt) 75%);background-size:200% 100%;animation:skel 1.2s infinite;border-radius:4px;height:12px;margin-bottom:6px}
-@keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
-.dv{border:none;border-top:.5px solid var(--bt);margin:8px 0}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--b2);border-radius:4px}
+.nxt{width:100%;padding:10px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;margin-top:10px;transition:background .15s}
+.nxt.green{background:#1d6f42;color:white}.nxt.green:hover{background:#155131}
+/* Loading */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin .9s linear infinite;display:inline-block}
+.ai-progress{background:var(--bi);border:.5px solid var(--bic);border-radius:8px;padding:18px;text-align:center}
+.ai-step{font-size:11px;color:var(--ci);margin-top:4px;min-height:16px}
+.prog-bar{margin-top:10px;background:var(--bic);border-radius:4px;height:5px;overflow:hidden}
+.prog-fill{height:100%;background:var(--ci);border-radius:4px;transition:width .5s}
+/* Time badges */
+.tr{padding:5px 8px;border-radius:5px;font-size:10px}
+.tok{background:var(--bg);color:var(--cg)}.twn{background:#FEF9C3;color:#92400E}.tbd{background:#FEF2F2;color:#991B1B}.tna{background:var(--bs);color:var(--cs)}
+@media(prefers-color-scheme:dark){.twn{background:#412402;color:#FAC775}.tbd{background:#3B0D0D;color:#FCA5A5}}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--b2);border-radius:4px}
 </style>
 </head>
 <body>
 
-<!-- API KEY MODAL -->
-<div class="ov" id="apiModal">
-  <div class="od">
+<div class="mb" id="apiModal">
+  <div class="md">
     <h2>🔑 Anthropic API 키 입력</h2>
-    <p>AI 자동 채점 기능(전 영역)을 사용하려면 API 키가 필요합니다.</p>
-    <div class="onote">📌 발급: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys<br>🔒 브라우저 localStorage에만 저장 · 서버 전송 없음<br>💰 학생 1명당 약 2~3회 API 호출 발생</div>
-    <input class="oi" id="apiKeyInp" type="password" placeholder="sk-ant-api03-...">
-    <div style="display:flex;gap:6px;justify-content:flex-end">
+    <p>AI 자동 채점 기능을 사용하려면 API 키가 필요합니다. 키는 이 브라우저에만 저장됩니다.</p>
+    <div class="mnote">📌 발급: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys<br>🔒 서버에 전송되지 않으며 브라우저 localStorage에만 저장됩니다</div>
+    <input class="minp" id="apiKeyInp" type="password" placeholder="sk-ant-api03-...">
+    <div class="mrow">
       <button class="btn bsc" onclick="closeApiModal()">나중에</button>
       <button class="btn bpr" onclick="saveApiKey()">저장하고 계속</button>
     </div>
   </div>
 </div>
 
-<!-- VIEW 1: UPLOAD -->
+<!-- VIEW 1: Upload -->
 <div id="v1" class="view on">
 <div class="upw">
   <div style="text-align:center">
-    <div style="font-size:26px;font-weight:600">🎯 수학말하기대회 AI 심사 시스템</div>
-    <div style="font-size:13px;color:var(--cs);margin-top:6px">제9회 올림피아드수학 · 중1 · 전 영역 AI 자동 채점</div>
-    <div style="font-size:12px;color:var(--cs);margin-top:3px">파일 업로드 → 학생 선택 → AI가 정량·전달력·창의성 전부 자동 채점</div>
+    <div style="font-size:26px;font-weight:500">🎯 수학말하기대회 AI 심사 시스템</div>
+    <div style="font-size:13px;color:var(--cs);margin-top:6px">제9회 올림피아드수학 · Vision AI 영상 직접 분석</div>
+    <div style="font-size:12px;color:var(--cs);margin-top:4px">엑셀 업로드 → 영상 캡처 → AI 전항목 자동 채점 → 결과 다운로드</div>
   </div>
   <div class="upz" id="upZone" onclick="document.getElementById('xlIn').click()">
     <i class="ti ti-file-spreadsheet" style="font-size:44px;color:var(--ci)"></i>
     <h2>접수 엑셀 파일 업로드</h2>
-    <p>.xlsx 파일을 클릭하거나 드래그해서 올려주세요</p>
+    <p>접수페이지에서 다운받은 .xlsx 파일을 클릭하거나 여기로 드래그해서 올려주세요</p>
     <div class="ctags"><span class="ct">접수일</span><span class="ct">브랜드</span><span class="ct">캠퍼스</span><span class="ct">학년</span><span class="ct">팀명</span><span class="ct">팀원</span><span class="ct">발표문제</span><span class="ct">영상주소</span><span class="ct">영상시간</span><span class="ct">좋아요수</span></div>
-    <button class="btn bpr" style="margin-top:14px;padding:10px 28px;font-size:14px">📂 파일 선택</button>
+    <button class="btn bpr" style="margin-top:14px;font-size:14px;padding:10px 28px">📂 파일 선택하기</button>
   </div>
-  <div style="font-size:11px;color:var(--cs);text-align:center">
-    <button class="btn bsc" style="font-size:11px" onclick="showApiModal()">🔑 API 키 설정</button>
-    <span id="apiSt1" style="margin-left:8px"></span>
+  <div style="font-size:11px;color:var(--cs);text-align:center;line-height:1.8">
+    AI 채점 사용 시 API 키가 필요합니다<br>
+    <button class="btn bsc" style="font-size:11px;margin-top:6px" onclick="showApiModal()">🔑 API 키 설정</button>
+    <span id="apiSt1" style="margin-left:8px;font-size:11px"></span>
   </div>
 </div>
 <input type="file" id="xlIn" accept=".xlsx,.xls" style="display:none" onchange="parseXL(this)">
 </div>
 
-<!-- VIEW 2: REVIEW -->
+<!-- VIEW 2: Review -->
 <div id="v2" class="view">
 <div class="rvw">
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+  <div class="rvh">
     <div>
-      <div style="font-size:16px;font-weight:600">접수 목록</div>
-      <div style="font-size:11px;color:var(--cs);margin-top:2px">학생을 클릭하거나 [심사 진행하기]를 눌러 시작하세요</div>
+      <div style="font-size:16px;font-weight:500">접수 목록 확인</div>
+      <div style="font-size:11px;color:var(--cs);margin-top:2px">학생 클릭 → 영상 캡처 → AI 전항목 자동 채점</div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn bsc" style="font-size:11px" onclick="showView('v1')">← 다시 업로드</button>
@@ -237,235 +170,234 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
       <button class="btn bxl" style="font-size:11px" onclick="doXL()"><i class="ti ti-download"></i> 결과 엑셀</button>
     </div>
   </div>
-  <div class="sg4" id="statGrid"></div>
+  <div class="sg" id="statGrid"></div>
   <div class="rtb">
     <div class="rth"><div>#</div><div>팀명 / 팀원</div><div>캠퍼스</div><div style="text-align:center">문항</div><div style="text-align:center">시간</div><div style="text-align:center">상태</div></div>
     <div class="rtbd" id="revList"></div>
   </div>
-  <button class="stbtn" onclick="startJudge()">▶ 심사 진행하기 (미완료 첫 번째부터)</button>
+  <button class="stbtn" onclick="startJudge()">🤖 AI 자동 심사 시작</button>
 </div>
 </div>
 
-<!-- VIEW 3: JUDGE -->
+<!-- VIEW 3: Judge -->
 <div id="v3" class="view">
 <div class="jl">
 
-<!-- LEFT PANEL -->
+<!-- Left -->
 <div class="jlft">
   <div>
     <span class="lbl">영상 URL</span>
-    <div class="rw">
+    <div class="row">
       <input class="inp" id="vUrl" style="flex:1" placeholder="https://...">
       <button class="btn bpr" style="padding:4px 7px;font-size:11px" onclick="loadVid()">▶</button>
-      <button class="btn bsc" style="padding:4px 6px;font-size:10px" onclick="openT()">↗</button>
+      <button class="btn bsc" style="padding:4px 6px;font-size:10px" title="새 탭" onclick="openT()">↗</button>
     </div>
   </div>
   <div class="vbx">
     <div class="vph" id="vph"><i class="ti ti-player-play" style="font-size:20px"></i><span>URL 입력 후 ▶ 클릭</span></div>
-    <video id="vP" style="display:none;width:100%;height:100%;object-fit:contain" controls onloadedmetadata="vidOk()" onerror="vidErr()"></video>
+    <video id="vP" style="display:none;width:100%;height:100%;object-fit:contain" controls crossorigin="anonymous" onloadedmetadata="vidOk()" onerror="vidErr()"></video>
   </div>
-  <div id="segW" style="display:none">
-    <span class="lbl" style="margin-bottom:3px">판서 구간 이동</span>
-    <div class="seg3">
-      <button class="sgb" id="sg0" onclick="jSeg(0)"><span style="font-weight:500;font-size:10px">구간 1</span><span class="sst" id="sst0">도입부</span></button>
-      <button class="sgb" id="sg1" onclick="jSeg(1)"><span style="font-weight:500;font-size:10px">구간 2</span><span class="sst" id="sst1">전개부</span></button>
-      <button class="sgb" id="sg2" onclick="jSeg(2)"><span style="font-weight:500;font-size:10px">구간 3</span><span class="sst" id="sst2">마무리</span></button>
-    </div>
+
+  <!-- 캡처 상태 및 미리보기 -->
+  <div id="capStatus" style="display:none;padding:6px 8px;border-radius:6px;font-size:10px;border:.5px solid var(--bt);background:var(--bp)">
+    <div id="capStatusTxt"></div>
+    <div class="cap-grid" id="capGrid"></div>
   </div>
-  <div class="sc-card">
+
+  <div class="sc">
     <div style="font-size:10px;font-weight:500;margin-bottom:4px;color:var(--cs)">실시간 채점 현황</div>
-    <div class="sr"><span style="color:var(--cs)">개념·완성도</span><b id="d12">0</b>/50</div>
-    <div class="sr"><span style="color:var(--cs)">전달력</span><b id="d3">0</b>/20</div>
-    <div class="sr"><span style="color:var(--cs)">AI 창의성</span><b id="d4">0</b>/30</div>
-    <div class="tot-c"><div class="tot-n" id="dTot">0</div><div style="font-size:9px;color:var(--cs)">/ 100점</div></div>
+    <div class="sr"><span style="color:var(--cs)">개념·완성도</span><span style="font-weight:500" id="d12">0/50</span></div>
+    <div class="sr"><span style="color:var(--cs)">전달력</span><span style="font-weight:500" id="d3">0/20</span></div>
+    <div class="sr"><span style="color:var(--cs)">AI 창의성</span><span style="font-weight:500" id="d4">0/30</span></div>
+    <div class="tot"><div class="tn" id="dTot">0</div><div style="font-size:9px;color:var(--cs)">/ 100점</div></div>
   </div>
-  <div class="prf">
-    <div class="prfh" onclick="togP()"><i class="ti ti-book-2" style="font-size:11px"></i><span id="ptit">문항 참조</span><i class="ti ti-chevron-down" id="pchev" style="margin-left:auto;font-size:11px;transition:transform .2s"></i></div>
-    <div class="prfb" id="prfb">
-      <div style="font-size:10px;line-height:1.6;margin-bottom:5px;color:var(--cp);white-space:pre-wrap" id="pq">-</div>
-      <div class="tls" id="ptms"></div>
-      <div class="ans" id="pans">정답: -</div>
-      <div class="kp" id="pkp">-</div>
-    </div>
+  <div style="background:var(--bp);border:.5px solid var(--bt);border-radius:7px;padding:8px 10px">
+    <div style="font-size:10px;font-weight:500;color:var(--cs);margin-bottom:4px">문항 참조</div>
+    <div style="font-size:10px;font-weight:500;color:var(--ci)" id="ptit">-</div>
+    <div style="font-size:10px;color:var(--cs);margin-top:3px;line-height:1.5" id="pq">-</div>
+    <div style="font-size:10px;font-weight:500;margin-top:4px;padding:3px 6px;background:var(--bg);border-radius:4px;color:var(--cg)" id="pans">정답: -</div>
   </div>
 </div>
 
-<!-- RIGHT PANEL -->
+<!-- Right -->
 <div class="jrgt">
   <div class="jtop">
     <div style="min-width:0">
-      <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="jTeam">-</div>
+      <div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="jTeam">-</div>
       <div style="font-size:10px;color:var(--cs)" id="jInfo">-</div>
     </div>
-    <div class="pbr"><div class="pbf" id="progF" style="width:0%"></div></div>
+    <div class="pb"><div class="pf" id="progF" style="width:0%"></div></div>
     <span style="font-size:10px;color:var(--cs);white-space:nowrap" id="progT">0/0</span>
     <div style="display:flex;gap:4px;margin-left:auto;flex-shrink:0">
       <button class="btn bsc" style="font-size:11px;padding:4px 8px" onclick="prevR()">◀ 이전</button>
       <button class="btn bsc" style="font-size:11px;padding:4px 8px" onclick="showView('v2')">목록</button>
-      <button class="btn bxl" style="font-size:11px;padding:4px 8px" onclick="doXL()">엑셀저장</button>
+      <button class="btn bpr" style="font-size:11px;padding:4px 8px" onclick="rerunAI()">🤖 재채점</button>
+      <button class="btn bxl" style="font-size:11px;padding:4px 8px" onclick="doXL()">엑셀 저장</button>
     </div>
   </div>
 
-  <div class="jmain">
+  <div class="stpc" id="stepCont">
 
-    <!-- AI 자동 채점 영역 -->
-    <div class="aibox">
-      <div class="aibox-info">
-        <div class="aibox-title">🤖 AI 전체 자동 채점</div>
-        <div class="aibox-sub" id="aiboxSub">정량·전달력·창의성 4개 영역 전부 AI가 자동으로 채점합니다</div>
-        <div class="ai-prog" id="aiProg">
-          <div id="aiProgTxt">채점 준비 중...</div>
-          <div class="ai-prog-bar"><div class="ai-prog-fill" id="aiProgFill" style="width:0%"></div></div>
-        </div>
-      </div>
-      <button class="ai-run-btn" id="aiBtn" onclick="autoScore()">⚡ AI 채점 시작</button>
-    </div>
-
-    <!-- 개념의 적절성 -->
-    <div class="ssec" id="sec1">
-      <div class="ssec-h" onclick="togSec('sb1')">
-        <span>📐 개념의 적절성</span>
-        <span class="ssec-badge bq">정량</span>
-        <span class="ssec-pts"><span id="pts1">0</span>/20</span>
-      </div>
-      <div class="ssec-b op" id="sb1">
-        <div class="si" id="si-concept">
-          <div class="si-top"><span class="si-name">개념 선정</span><div class="si-bar"><div class="si-fill" id="bar-concept" style="width:100%"></div></div><span class="si-pts" id="pts-concept">10</span></div>
-          <div class="si-reason" id="rsn-concept">AI 채점 대기 중...</div>
-          <div class="si-adj"><span class="si-adj-lbl">조정</span><input type="range" min="0" max="10" id="sl-concept" value="10" oninput="adj('concept',this.value)"><span class="si-adj-val" id="av-concept">10</span></div>
-        </div>
-        <div class="si" id="si-term">
-          <div class="si-top"><span class="si-name">용어 정리</span><div class="si-bar"><div class="si-fill" id="bar-term" style="width:100%"></div></div><span class="si-pts" id="pts-term">10</span></div>
-          <div class="si-reason" id="rsn-term">AI 채점 대기 중...</div>
-          <div class="si-miss" id="miss-term"></div>
-          <div class="si-adj"><span class="si-adj-lbl">조정</span><input type="range" min="0" max="10" id="sl-term" value="10" oninput="adj('term',this.value)"><span class="si-adj-val" id="av-term">10</span></div>
-        </div>
+    <!-- AI 로딩 -->
+    <div id="aiLoadBox" style="display:none">
+      <div class="ai-progress">
+        <div style="font-size:28px" class="spin" id="aiSpinIcon">🤖</div>
+        <div style="font-size:13px;font-weight:500;margin-top:6px">AI 심사위원이 채점 중입니다</div>
+        <div class="ai-step" id="aiStepTxt">준비 중...</div>
+        <div class="prog-bar"><div id="aiProgBar" class="prog-fill" style="width:0%"></div></div>
       </div>
     </div>
 
-    <!-- 설명의 완성도 -->
-    <div class="ssec" id="sec2">
-      <div class="ssec-h" onclick="togSec('sb2')">
-        <span>⏱ 설명의 완성도</span>
-        <span class="ssec-badge bq">정량</span>
-        <span class="ssec-pts"><span id="pts2">0</span>/30</span>
-      </div>
-      <div class="ssec-b op" id="sb2">
-        <div class="si" id="si-time">
-          <div class="si-top"><span class="si-name">시간 준수</span><div class="si-bar"><div class="si-fill" id="bar-time" style="width:0%"></div></div><span class="si-pts" id="pts-time">0</span></div>
-          <div class="si-reason" id="rsn-time">발표 시간에서 자동 계산</div>
-        </div>
-        <div class="si" id="si-acc">
-          <div class="si-top"><span class="si-name">정확성</span><div class="si-bar"><div class="si-fill" id="bar-acc" style="width:100%"></div></div><span class="si-pts" id="pts-acc">10</span></div>
-          <div class="si-reason" id="rsn-acc">AI 채점 대기 중...</div>
-          <div class="si-adj"><span class="si-adj-lbl">조정</span><input type="range" min="0" max="10" id="sl-acc" value="10" oninput="adj('acc',this.value)"><span class="si-adj-val" id="av-acc">10</span></div>
-        </div>
-        <div class="si" id="si-logic">
-          <div class="si-top"><span class="si-name">논리성</span><div class="si-bar"><div class="si-fill" id="bar-logic" style="width:0%"></div></div><span class="si-pts" id="pts-logic">0</span></div>
-          <div class="si-reason" id="rsn-logic">AI 채점 대기 중...</div>
-          <div class="si-adj"><span class="si-adj-lbl">조정</span><input type="range" min="0" max="10" id="sl-logic" value="0" oninput="adj('logic',this.value)"><span class="si-adj-val" id="av-logic">0</span></div>
-        </div>
-      </div>
-    </div>
+    <!-- 채점 결과 -->
+    <div id="resultBox" style="display:none">
 
-    <!-- 전달력 -->
-    <div class="ssec" id="sec3">
-      <div class="ssec-h" onclick="togSec('sb3')">
-        <span>✍️ 전달력</span>
-        <span class="ssec-badge bq">AI 평가</span>
-        <span class="ssec-pts"><span id="pts3">0</span>/20</span>
-      </div>
-      <div class="ssec-b op" id="sb3">
-        <div class="si" id="si-board">
-          <div class="si-top"><span class="si-name">판서</span><div class="si-bar"><div class="si-fill" id="bar-board" style="width:0%"></div></div><span class="si-pts" id="pts-board">0</span></div>
-          <div class="si-reason" id="rsn-board">AI 채점 대기 중...</div>
-          <div class="si-adj"><span class="si-adj-lbl">조정</span><input type="range" min="0" max="10" id="sl-board" value="0" oninput="adj('board',this.value)"><span class="si-adj-val" id="av-board">0</span></div>
+      <!-- 개념의 적절성 20점 -->
+      <div class="scard">
+        <div class="scardh sh-blue">
+          <span>📊 개념의 적절성</span>
+          <span class="badge badge-blue" style="margin-left:auto">AI 텍스트 채점</span>
+          <span style="font-size:11px;font-weight:600;color:#185FA5;margin-left:8px" id="tot1">-/20</span>
         </div>
-        <div class="si" id="si-speak">
-          <div class="si-top"><span class="si-name">말하기</span><div class="si-bar"><div class="si-fill" id="bar-speak" style="width:0%"></div></div><span class="si-pts" id="pts-speak">0</span></div>
-          <div class="si-reason" id="rsn-speak">AI 채점 대기 중...</div>
-          <div class="si-adj"><span class="si-adj-lbl">조정</span><input type="range" min="0" max="10" id="sl-speak" value="0" oninput="adj('speak',this.value)"><span class="si-adj-val" id="av-speak">0</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- AI 창의성 -->
-    <div class="ssec" id="sec4">
-      <div class="ssec-h" onclick="togSec('sb4')">
-        <span>🎨 AI 창의성</span>
-        <span class="ssec-badge bai">AI 페르소나</span>
-        <span class="ssec-pts"><span id="pts4">0</span>/30</span>
-      </div>
-      <div class="ssec-b op" id="sb4">
-        <!-- 수학 교사 -->
-        <div class="persona p1" id="per1">
-          <div class="p-head">
-            <span class="p-emoji">🧮</span>
-            <div class="p-meta">
-              <div class="p-name">수학 교사 페르소나</div>
-              <div class="p-sub">예시의 수학적 적절성과 참신함</div>
-            </div>
-            <div class="p-score-area">
-              <div class="p-score-big"><span id="pts-ex">-</span><span style="font-size:12px;font-weight:400;color:var(--cs)">/10</span></div>
-              <div class="p-score-sub">예시 점수</div>
-            </div>
+        <div class="scardb">
+          <div class="srow">
+            <span class="slabel">개념 선정</span>
+            <div class="slr2"><input type="range" id="slC" min="0" max="10" value="10" oninput="manualSync('concept',this.value)"></div>
+            <span class="sval" id="vlC">10</span><span class="smax">/10</span>
           </div>
-          <div class="p-reason" id="rsn-ex">AI 채점 대기 중...</div>
-          <div class="si-adj" style="margin-top:6px;padding-top:6px;border-top:.5px solid rgba(0,0,0,.08)"><span class="si-adj-lbl">조정</span><input type="range" min="0" max="10" id="sl-ex" value="0" oninput="adj('ex',this.value)"><span class="si-adj-val" id="av-ex">0</span></div>
+          <div class="srow">
+            <span class="slabel">용어 정리</span>
+            <div class="slr2"><input type="range" id="slT" min="0" max="10" value="10" oninput="manualSync('term',this.value)"></div>
+            <span class="sval" id="vlT">10</span><span class="smax">/10</span>
+          </div>
+          <div class="dv"></div>
+          <div style="font-size:10px;color:var(--cs);font-weight:500">AI 채점 사유 <span style="font-weight:400">(클릭하여 수정 가능)</span></div>
+          <div class="reason-box" id="r1" contenteditable="true"></div>
         </div>
-        <!-- 또래 학생 -->
-        <div class="persona p2" id="per2">
-          <div class="p-head">
-            <span class="p-emoji">🎒</span>
-            <div class="p-meta">
-              <div class="p-name">또래 학생 페르소나</div>
-              <div class="p-sub">흥미유발 + 또래 이해도</div>
-            </div>
-            <div class="p-score-area">
-              <div class="p-score-big"><span id="pts-ep">-</span><span style="font-size:12px;font-weight:400;color:var(--cs)">/20</span></div>
-              <div class="p-score-sub">흥미+또래</div>
-            </div>
+      </div>
+
+      <!-- 설명의 완성도 30점 -->
+      <div class="scard">
+        <div class="scardh sh-green">
+          <span>⏱ 설명의 완성도</span>
+          <span class="badge badge-blue" style="margin-left:auto">AI 텍스트 채점</span>
+          <span style="font-size:11px;font-weight:600;color:#0F6E56;margin-left:8px" id="tot2">-/30</span>
+        </div>
+        <div class="scardb">
+          <div class="srow">
+            <span class="slabel">시간 준수</span>
+            <div style="flex:1"><div id="tR" class="tr tna">영상 로드 전</div></div>
+            <span class="sval" id="vlTm">0</span><span class="smax">/10</span>
           </div>
-          <div class="p-scores-row">
-            <span class="p-score-chip" style="color:var(--ci)">흥미 <b id="pts-eng">-</b>/10</span>
-            <span class="p-score-chip" style="color:var(--cg)">또래이해 <b id="pts-peer">-</b>/10</span>
+          <div style="font-size:10px;padding:4px 7px;border-radius:5px;background:var(--bs)" id="durInfo">실제 재생시간: 측정 전</div>
+          <div class="srow">
+            <span class="slabel">정확성</span>
+            <div class="slr2"><input type="range" id="slAc" min="0" max="10" value="10" oninput="manualSync('acc',this.value)"></div>
+            <span class="sval" id="vlAc">10</span><span class="smax">/10</span>
           </div>
-          <div class="p-reason" id="rsn-ep">AI 채점 대기 중...</div>
-          <div class="si-adj" style="margin-top:6px;padding-top:6px;border-top:.5px solid rgba(0,0,0,.08)">
-            <span class="si-adj-lbl">흥미 조정</span><input type="range" min="0" max="10" id="sl-eng" value="0" oninput="adj('eng',this.value)"><span class="si-adj-val" id="av-eng">0</span>
-            <span class="si-adj-lbl" style="margin-left:8px">또래 조정</span><input type="range" min="0" max="10" id="sl-peer" value="0" oninput="adj('peer',this.value)"><span class="si-adj-val" id="av-peer">0</span>
+          <div class="srow">
+            <span class="slabel">논리성</span>
+            <div class="slr2"><input type="range" id="slLg" min="0" max="10" value="0" oninput="manualSync('logic',this.value)"></div>
+            <span class="sval" id="vlLg">0</span><span class="smax">/10</span>
+          </div>
+          <div class="dv"></div>
+          <div style="font-size:10px;color:var(--cs);font-weight:500">AI 채점 사유</div>
+          <div class="reason-box" id="r2" contenteditable="true"></div>
+        </div>
+      </div>
+
+      <!-- 전달력 20점 -->
+      <div class="scard">
+        <div class="scardh sh-orange">
+          <span>✍️ 전달력</span>
+          <span class="badge" id="delivBadge" style="margin-left:auto;background:#EAF3DE;color:#3B6D11">Vision AI 영상 분석</span>
+          <span style="font-size:11px;font-weight:600;color:#854F0B;margin-left:8px" id="tot3">-/20</span>
+        </div>
+        <div class="scardb">
+          <!-- 캡처 이미지 표시 (Vision 성공 시) -->
+          <div id="visionCaptures" style="display:none">
+            <div style="font-size:10px;color:var(--cs);font-weight:500;margin-bottom:4px">📸 AI가 분석한 영상 캡처 (3구간)</div>
+            <div class="cap-grid" id="visionCapGrid"></div>
+          </div>
+          <div class="srow">
+            <span class="slabel">판서</span>
+            <div class="slr2"><input type="range" id="slBd" min="0" max="10" value="0" oninput="manualSync('board',this.value)"></div>
+            <span class="sval" id="vlBd">0</span><span class="smax">/10</span>
+          </div>
+          <div class="srow">
+            <span class="slabel">말하기</span>
+            <div class="slr2"><input type="range" id="slSp" min="0" max="10" value="0" oninput="manualSync('speak',this.value)"></div>
+            <span class="sval" id="vlSp">0</span><span class="smax">/10</span>
+          </div>
+          <div class="dv"></div>
+          <div style="font-size:10px;color:var(--cs);font-weight:500">AI 채점 사유</div>
+          <div class="reason-box" id="r3" contenteditable="true"></div>
+        </div>
+      </div>
+
+      <!-- AI 창의성 30점 -->
+      <div class="scard">
+        <div class="scardh sh-purple">
+          <span>🤖 AI 창의성</span>
+          <span class="badge badge-blue" style="margin-left:auto">AI 페르소나 채점</span>
+          <span style="font-size:11px;font-weight:600;color:#6D28D9;margin-left:8px" id="tot4">-/30</span>
+        </div>
+        <div class="scardb">
+          <div class="srow">
+            <span class="slabel">예시 (수학교사)</span>
+            <div class="slr2"><input type="range" id="slEx" min="0" max="10" value="0" oninput="manualSync('ex',this.value)"></div>
+            <span class="sval" id="vlEx">0</span><span class="smax">/10</span>
+          </div>
+          <div class="srow">
+            <span class="slabel">흥미유발 (또래)</span>
+            <div class="slr2"><input type="range" id="slEn" min="0" max="10" value="0" oninput="manualSync('eng',this.value)"></div>
+            <span class="sval" id="vlEn">0</span><span class="smax">/10</span>
+          </div>
+          <div class="srow">
+            <span class="slabel">또래이해 (또래)</span>
+            <div class="slr2"><input type="range" id="slPe" min="0" max="10" value="0" oninput="manualSync('peer',this.value)"></div>
+            <span class="sval" id="vlPe">0</span><span class="smax">/10</span>
+          </div>
+          <div class="dv"></div>
+          <div style="font-size:10px;color:var(--cs);font-weight:500">🧮 수학 교사 피드백</div>
+          <div class="reason-box" id="fb1"></div>
+          <div style="font-size:10px;color:var(--cs);font-weight:500;margin-top:4px">🎒 또래 학생 피드백</div>
+          <div class="reason-box" id="fb2"></div>
+          <div style="font-size:10px;color:var(--cs);font-weight:500;margin-top:4px">🎤 발표 코치 피드백</div>
+          <div class="reason-box" id="fb3"></div>
+        </div>
+      </div>
+
+      <!-- 최종 결과 -->
+      <div class="scard">
+        <div class="scardh" style="background:var(--bi)">
+          <span>🏆 최종 결과</span>
+          <span style="font-size:11px;font-weight:600;color:var(--ci);margin-left:auto" id="totAll">-/100</span>
+        </div>
+        <div class="scardb">
+          <div class="fg">
+            <div class="fc"><div class="fl">개념의 적절성</div><div class="fn" id="fs1">-<span style="font-size:11px;color:var(--cs)">/20</span></div></div>
+            <div class="fc"><div class="fl">설명의 완성도</div><div class="fn" id="fs2">-<span style="font-size:11px;color:var(--cs)">/30</span></div></div>
+            <div class="fc"><div class="fl">전달력</div><div class="fn" id="fs3">-<span style="font-size:11px;color:var(--cs)">/20</span></div></div>
+            <div class="fc"><div class="fl">AI 창의성</div><div class="fn" id="fs4">-<span style="font-size:11px;color:var(--cs)">/30</span></div></div>
+          </div>
+          <div class="ftot">
+            <div class="fb" id="fsTot">-</div>
+            <div style="font-size:12px;color:var(--cs)">/ 100점 · <strong id="fsGrd">-</strong></div>
           </div>
         </div>
-        <!-- 발표 코치 -->
-        <div class="persona p3" id="per3">
-          <div class="p-head">
-            <span class="p-emoji">🎤</span>
-            <div class="p-meta">
-              <div class="p-name">발표 코치 페르소나</div>
-              <div class="p-sub">강점 · 개선점 종합 피드백</div>
-            </div>
-          </div>
-          <div class="coach-fb" id="rsn-coach">AI 채점 대기 중...</div>
-        </div>
+      </div>
+
+      <button class="nxt green" onclick="saveNext()" style="font-size:14px;padding:13px">💾 채점 저장 후 다음 학생으로 →</button>
+      <div style="display:flex;gap:6px;margin-top:6px;margin-bottom:16px">
+        <button class="btn bsc" style="flex:1" onclick="prevR()">◀ 이전 학생</button>
+        <button class="btn bsc" style="flex:1;color:#DC2626" onclick="if(confirm('재채점할까요?'))rerunAI()">🔄 재채점</button>
       </div>
     </div>
 
-    <!-- 총점 -->
-    <div class="tot-sec" id="totSec">
-      <div class="tot-big" id="totBig">0</div>
-      <div class="tot-grade" id="totGrade" style="color:var(--cs)">/ 100점</div>
-      <div class="tot-breakdown">
-        <div class="tb-c"><div class="tb-n" id="tb1">0</div><div class="tb-l">개념·완성도</div></div>
-        <div class="tb-c"><div class="tb-n" id="tb2">0</div><div class="tb-l">전달력</div></div>
-        <div class="tb-c"><div class="tb-n" id="tb3">0</div><div class="tb-l">창의성</div></div>
-        <div class="tb-c"><div class="tb-n" id="tb4">-</div><div class="tb-l">등급</div></div>
-      </div>
-    </div>
-
-    <button class="save-btn" onclick="saveNext()">💾 채점 저장 후 다음 학생 →</button>
-    <div style="display:flex;gap:6px;margin-top:6px">
-      <button class="btn bsc" style="flex:1" onclick="prevR()">◀ 이전 학생</button>
-      <button class="btn bsc" style="flex:1;color:#DC2626" onclick="if(confirm('이 학생 채점을 초기화할까요?'))rScores()">초기화</button>
+    <!-- 빈 상태 -->
+    <div id="emptyBox" style="padding:40px;text-align:center;color:var(--cs)">
+      <div style="font-size:32px;margin-bottom:10px">🤖</div>
+      <div style="font-size:13px">학생을 선택하면 AI가 자동 채점을 시작합니다</div>
     </div>
   </div>
 </div>
@@ -473,40 +405,41 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
 </div>
 
 <script>
-// ═══════════════════════════════════
-//  문항 데이터
-// ═══════════════════════════════════
+// ── 문항 데이터 ──────────────────────────────────────────────
 const PD={'중1':[
-  {id:1,title:'1번 — 정수와 유리수',q:'절댓값이 x 이하인 정수의 개수가 101개일 때, 옳은 것을 모두 고르시오.\n보기: ㄱ.짝수  ㄴ.5의 배수  ㄷ.약수 10개',ans:'ㄱ, ㄴ  (x=50)',kp:'2x+1=101 → x=50\n50=2×5²이므로 약수의 개수=6개',terms:['소수','합성수','거듭제곱','소인수','소인수분해','약수','약수의 개수','정수','양의 정수','음의 정수','절댓값','수직선','원점']},
-  {id:2,title:'2번 — 문자와 식',q:'도형(5, 11, 3a-2, a+4)의 넓이를 a를 사용한 식으로 나타내시오.',ans:'21a + 14',kp:'5(3a-2)+6(a+4)=21a+14',terms:['문자식','차수','다항식','일차식','동류항','분배법칙','계수','상수항']},
+  {id:1,title:'1번 — 정수와 유리수',q:'절댓값이 x 이하인 정수의 개수가 101개일 때, 자연수 x에 대하여 옳은 것을 모두 고르시오.\n보기: ㄱ.짝수 ㄴ.5의 배수 ㄷ.약수 10개',ans:'ㄱ, ㄴ  (x=50)',kp:'2x+1=101 → x=50, 50=2×5²이므로 약수의 개수=6개',terms:['소수','합성수','거듭제곱','소인수','소인수분해','약수','약수의 개수','정수','양의 정수','음의 정수','절댓값','수직선','원점']},
+  {id:2,title:'2번 — 문자와 식',q:'도형(5, 11, 3a-2, a+4)의 넓이를 a를 사용한 식으로 나타내시오.',ans:'21a+14',kp:'5(3a-2)+6(a+4)=15a-10+6a+24=21a+14',terms:['문자식','차수','다항식','일차식','동류항','분배법칙','계수','상수항']},
   {id:3,title:'3번 — 정비례와 반비례',q:'y=-1/3x 위의 점 A(제4사분면), y=-2x 위의 점 B, AB=5. 점 A의 좌표는?',ans:'A(3, -1)',kp:'A(a,-a/3), B(a,-2a). |5a/3|=5 → a=3',terms:['정비례','비례상수','좌표','좌표평면','사분면','x축','y축','원점','반비례']},
-  {id:4,title:'4번 — 기본 도형',q:'네 직선이 한 점 O에서 만남. ∠AOH가 ∠DOB보다 34° 클 때 ∠COB는?',ans:'∠COB = 152°',kp:'∠DOB=x → 4x=112° → x=28°, ∠COB=180°-28°=152°',terms:['각','반직선','평각','직각','예각','둔각','교각','맞꼭지각']},
+  {id:4,title:'4번 — 기본 도형',q:'네 직선이 한 점에서 만남. ∠AOH가 ∠DOB보다 34° 클 때 ∠COB는?',ans:'∠COB = 152°',kp:'∠DOB=x → 4x=112° → x=28°, ∠COB=180°-28°=152°',terms:['각','반직선','평각','직각','예각','둔각','교각','맞꼭지각']},
   {id:5,title:'5번 — 다각형',q:'도형에서 ∠a+∠b+∠c+∠d+∠e+∠f의 크기는? (62° 포함)',ans:'478°',kp:'오각형 내각의 합=540°, 540°-62°=478°',terms:['다각형','변','꼭짓점','내각','외각','삼각형의 내각','삼각형의 외각','다각형의 내각의 합','대각선']}
 ]};
+
 const HMAP={'접수일':'date','브랜드':'brand','캠퍼스':'campus','학년':'grade','팀명':'teamName','팀원':'members','발표 문제':'problem','발표문제':'problem','발표 문항':'problem','발표문항':'problem','영상주소':'url','영상 주소':'url','영상url':'url','영상시간':'duration','영상 시간':'duration','좋아요 수':'likes','좋아요수':'likes','접수상태':'status'};
 
-// ═══════════════════════════════════
-//  State
-// ═══════════════════════════════════
-const S={concept:10,term:10,time:0,acc:10,logic:0,board:0,speak:0,ex:0,eng:0,peer:0};
+// ── 상태 ──────────────────────────────────────────────────────
+const SC={concept:10,term:10,time:0,acc:10,logic:0,board:0,speak:0,ex:0,eng:0,peer:0};
+let aiReasons={r1:'',r2:'',r3:'',fb1:'',fb2:'',fb3:''};
 let queue=[],curI=-1,cGr='중1',cPr=1;
+let capturedFrames=[]; // base64 strings (null = CORS failed)
+let detectedDuration=0;
+let visionUsed=false;
+let pendingAutoScore=false; // jQ에서 세팅, vidOk에서 소비
 
-// ═══════════════════════════════════
-//  API Key
-// ═══════════════════════════════════
+// ── 뷰 전환 ───────────────────────────────────────────────────
+function showView(id){
+  ['v1','v2','v3'].forEach(v=>{const el=document.getElementById(v);el.classList.remove('on');el.style.display='none';});
+  const el=document.getElementById(id);el.style.display='';el.classList.add('on');
+  if(id==='v2')renderReview();if(id==='v1')updApiSt();
+}
 function showApiModal(){document.getElementById('apiModal').classList.add('on');document.getElementById('apiKeyInp').value=localStorage.getItem('apiKey')||'';}
 function closeApiModal(){document.getElementById('apiModal').classList.remove('on');}
-function saveApiKey(){const k=document.getElementById('apiKeyInp').value.trim();if(!k||!k.startsWith('sk-')){alert('올바른 API 키를 입력하세요');return;}localStorage.setItem('apiKey',k);closeApiModal();updApiSt();}
-function updApiSt(){const k=!!localStorage.getItem('apiKey');[document.getElementById('apiSt1'),document.getElementById('apiSt2')].forEach(el=>{if(el)el.textContent=k?'✅ 등록됨':'❌ 미등록';});}
+function saveApiKey(){const k=document.getElementById('apiKeyInp').value.trim();if(!k||!k.startsWith('sk-')){alert('올바른 API 키를 입력하세요 (sk-ant-... 형식)');return;}localStorage.setItem('apiKey',k);closeApiModal();updApiSt();}
+function updApiSt(){
+  const k=!!localStorage.getItem('apiKey');
+  ['apiSt1','apiSt2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=k?'✅ 등록됨':'❌ 미등록';});
+}
 
-// ═══════════════════════════════════
-//  Views
-// ═══════════════════════════════════
-function showView(id){['v1','v2','v3'].forEach(v=>{const el=document.getElementById(v);el.classList.remove('on');el.style.display='none';});const el=document.getElementById(id);el.style.display='';el.classList.add('on');if(id==='v2')renderReview();}
-
-// ═══════════════════════════════════
-//  Excel Parse
-// ═══════════════════════════════════
+// ── 엑셀 파싱 ─────────────────────────────────────────────────
 function parseXL(inp){
   const f=inp.files[0];if(!f)return;
   const r=new FileReader();
@@ -530,501 +463,555 @@ function parseXL(inp){
   r.readAsArrayBuffer(f);
 }
 function timeToSec(t){if(!t)return 0;const p=String(t).split(':').map(Number);return p.length===2?(p[0]||0)*60+(p[1]||0):p.length===3?(p[0]||0)*3600+(p[1]||0)*60+(p[2]||0):parseInt(t)||0;}
+function fmt(s){return`${Math.floor(s/60)}:${String(Math.round(s%60)).padStart(2,'0')}`}
 
-// ═══════════════════════════════════
-//  Review
-// ═══════════════════════════════════
+// ── 목록 렌더 ─────────────────────────────────────────────────
 function renderReview(){
-  const tot=queue.length;if(!tot){document.getElementById('statGrid').innerHTML='';document.getElementById('revList').innerHTML='<div style="padding:20px;text-align:center;color:var(--cs)">업로드된 데이터가 없습니다.</div>';return;}
-  const done=queue.filter(q=>q.status2==='done').length;
+  const tot=queue.length;
+  if(!tot){document.getElementById('statGrid').innerHTML='';document.getElementById('revList').innerHTML='<div style="padding:20px;text-align:center;color:var(--cs)">업로드된 데이터가 없습니다.</div>';return;}
   const grades={},probs={};
   queue.forEach(q=>{grades[q.grade]=(grades[q.grade]||0)+1;probs[q.problem+'번']=(probs[q.problem+'번']||0)+1;});
-  const topGr=Object.entries(grades).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k,v])=>k+' '+v+'명').join(', ');
-  const topPr=Object.entries(probs).sort((a,b)=>parseInt(a)-parseInt(b)).map(([k,v])=>k+'('+v+')').join(' ');
-  document.getElementById('statGrid').innerHTML=`<div class="sb"><div class="sbn">${tot}</div><div class="sbl">전체 접수</div></div><div class="sb"><div class="sbn" style="color:var(--cg)">${done}</div><div class="sbl">채점 완료</div></div><div class="sb"><div class="sbn" style="font-size:14px;margin-top:4px">${topGr||'-'}</div><div class="sbl">학년 분포</div></div><div class="sb"><div class="sbn" style="font-size:12px;margin-top:6px">${topPr||'-'}</div><div class="sbl">문항 분포</div></div>`;
-  document.getElementById('revList').innerHTML=queue.slice(0,100).map((q,i)=>`<div class="rr" onclick="jQ(${i});startJudge()" style="${q.status2==='done'?'color:var(--cg)':''}"><div style="color:var(--cs)">${q.id}</div><div><strong>${q.teamName}</strong>${q.members&&q.members!==q.teamName?` <span style="font-size:10px;opacity:.7">/ ${q.members}</span>`:''}</div><div style="font-size:11px;color:var(--cs)">${q.campus}</div><div style="text-align:center"><span style="padding:1px 6px;border-radius:20px;background:var(--bi);color:var(--ci);font-size:10px">${q.problem}번</span></div><div style="text-align:center;font-size:11px">${q.duration||'-'}</div><div style="text-align:center;font-size:10px">${q.status2==='done'?'✅':'<span style="color:var(--cs)">대기</span>'}</div></div>`).join('');
-  if(queue.length>100)document.getElementById('revList').innerHTML+=`<div style="padding:8px;text-align:center;font-size:11px;color:var(--cs)">+ ${queue.length-100}건 더 있음</div>`;
+  const topGr=Object.entries(grades).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k,v])=>`${k} ${v}명`).join(', ');
+  const topPr=Object.entries(probs).sort((a,b)=>parseInt(a)-parseInt(b)).map(([k,v])=>`${k}(${v}명)`).join(' ');
+  document.getElementById('statGrid').innerHTML=`<div class="sb"><div class="sbn">${tot}</div><div class="sbl">전체 접수</div></div><div class="sb"><div class="sbn" style="color:var(--cg)">${queue.filter(q=>q.status2==='done').length}</div><div class="sbl">채점 완료</div></div><div class="sb"><div class="sbn" style="font-size:14px;margin-top:4px">${topGr||'-'}</div><div class="sbl">학년 분포</div></div><div class="sb"><div class="sbn" style="font-size:12px;margin-top:6px">${topPr||'-'}</div><div class="sbl">문항 분포</div></div>`;
+  document.getElementById('revList').innerHTML=queue.slice(0,100).map((q,i)=>`<div class="rr" onclick="jQ(${i});showView('v3')" style="${q.status2==='done'?'color:var(--cg)':''}"><div style="color:var(--cs)">${q.id}</div><div><strong>${q.teamName}</strong>${q.members&&q.members!==q.teamName?' <span style="font-size:10px;opacity:.7">/ '+q.members+'</span>':''}</div><div style="font-size:11px;color:var(--cs)">${q.campus}</div><div style="text-align:center"><span style="padding:1px 6px;border-radius:20px;background:var(--bi);color:var(--ci);font-size:10px">${q.problem}번</span></div><div style="text-align:center;font-size:11px">${q.duration||'-'}</div><div style="text-align:center;font-size:10px">${q.status2==='done'?'✅완료':'<span style="color:var(--cs)">대기</span>'}</div></div>`).join('')+(queue.length>100?`<div style="padding:8px;text-align:center;font-size:11px;color:var(--cs)">+ ${queue.length-100}건 더 있음</div>`:'');
 }
-function startJudge(){if(!queue.length){alert('엑셀을 먼저 업로드하세요.');return;}const fi=queue.findIndex(q=>q.status2==='pending');jQ(fi>=0?fi:0);showView('v3');}
 
-// ═══════════════════════════════════
-//  Load Student
-// ═══════════════════════════════════
+function startJudge(){
+  if(!queue.length){alert('엑셀을 먼저 업로드하세요.');return;}
+  const fi=queue.findIndex(q=>q.status2==='pending');
+  jQ(fi>=0?fi:0);showView('v3');
+}
+
 function jQ(i){
-  if(i<0||i>=queue.length)return;curI=i;const q=queue[i];
+  if(i<0||i>=queue.length)return;
+  curI=i;const q=queue[i];
+  capturedFrames=[];detectedDuration=0;visionUsed=false;
   document.getElementById('vUrl').value=q.url||'';
-  document.getElementById('jTeam').textContent=`${q.teamName}${q.members&&q.members!==q.teamName?' / '+q.members:''}${q.type==='팀'?' [팀전]':''}`;
-  document.getElementById('jInfo').textContent=`${q.brand} ${q.campus} · ${q.grade} · ${q.problem}번 · ${q.duration||'-'}`;
-  cGr=q.grade.includes('중1')?'중1':'중1';cPr=q.problem;
+  document.getElementById('jTeam').textContent=`${q.teamName}${q.members&&q.members!==q.teamName?' / '+q.members:''}`;
+  document.getElementById('jInfo').textContent=`${q.brand||''} ${q.campus||''} · ${q.grade||''} · ${q.problem}번 · ${q.duration||'-'} · ${q.type}`;
+  cGr=q.grade&&q.grade.includes('중1')?'중1':'중1';cPr=q.problem;
   loadProb(cGr,cPr);
-  if(q.url)loadVid();else{document.getElementById('vP').style.display='none';document.getElementById('vP').src='';document.getElementById('vph').style.display='flex';document.getElementById('vph').innerHTML='<i class="ti ti-player-play" style="font-size:20px"></i><span>URL 입력 후 ▶ 클릭</span>';}
-  rScores();
-  if(q.durationSec>0)applyTimeScore(q.durationSec);
-  if(q.result)restoreRes(q.result);
+  resetVid();
+  document.getElementById('capStatus').style.display='none';
+  document.getElementById('capGrid').innerHTML='';
   updProg();
-  document.getElementById('aiBtn').disabled=false;
-  document.getElementById('aiBtn').innerHTML='⚡ AI 채점 시작';
-  document.getElementById('aiProg').style.display='none';
-  document.getElementById('aiboxSub').textContent='정량·전달력·창의성 4개 영역 전부 AI가 자동으로 채점합니다';
+  if(q.result){restoreResult(q.result);}
+  else{
+    showEmpty();
+    if(q.url){
+      pendingAutoScore=true;
+      loadVidAndScore();
+      // 영상 로딩이 10초 안에 안 되면 텍스트 채점으로 시작
+      setTimeout(()=>{
+        if(pendingAutoScore){pendingAutoScore=false;runAI(false);}
+      },10000);
+    }else{runAI(false);}
+  }
 }
 
-function applyTimeScore(sec){
-  let s=0,label='';
-  if(sec>=180&&sec<=300){s=10;label=`✅ ${fmt(sec)} — 기준 시간 (10점)`;}
-  else if((sec>=150&&sec<180)||(sec>300&&sec<=330)){s=7;label=`⚠️ ${fmt(sec)} — 기준±30초 (7점)`;}
-  else if((sec>=120&&sec<150)||(sec>330&&sec<=360)){s=4;label=`❌ ${fmt(sec)} — 기준±1분 (4점)`;}
-  else{s=0;label=`❌ ${fmt(sec)} — 기준 초과/미달 (0점)`;}
-  S.time=s;
-  setScoreItem('time',s,label,null);
-  document.getElementById('si-time').className=s===10?'si ts-ok':'si';
-  updTotal();
+function loadProb(gr,n){
+  const p=PD[gr]?.[n-1];if(!p)return;
+  document.getElementById('ptit').textContent=p.title;
+  document.getElementById('pq').textContent=p.q;
+  document.getElementById('pans').textContent='정답: '+p.ans;
 }
 
-function restoreRes(r){
-  if(!r)return;
-  const keys=['concept','term','acc','logic','board','speak','ex','eng','peer'];
-  keys.forEach(k=>{if(r.scores?.[k]!==undefined){S[k]=r.scores[k];document.getElementById('sl-'+k).value=r.scores[k];document.getElementById('av-'+k).value=r.scores[k];}});
-  if(r.scores?.time!==undefined){S.time=r.scores.time;}
-  if(r.reasons)Object.keys(r.reasons).forEach(k=>{const el=document.getElementById('rsn-'+k);if(el)el.textContent=r.reasons[k];});
-  if(r.reasons?.coach){const el=document.getElementById('rsn-coach');if(el)el.textContent=r.reasons.coach;}
-  if(r.missed){const el=document.getElementById('miss-term');if(el)el.innerHTML=r.missed.map(t=>`<span class="miss-tag">❌ ${t}</span>`).join('');}
-  updAllBars();updTotal();
+// ── 영상 처리 ─────────────────────────────────────────────────
+function resetVid(){
+  const v=document.getElementById('vP');
+  v.style.display='none';v.src='';
+  const ph=document.getElementById('vph');
+  ph.style.display='flex';
+  ph.innerHTML='<i class="ti ti-player-play" style="font-size:20px"></i><span>URL 입력 후 ▶ 클릭</span>';
 }
 
-// ═══════════════════════════════════
-//  Problem Reference
-// ═══════════════════════════════════
-function loadProb(gr,n){const p=PD[gr]?.[n-1];if(!p)return;document.getElementById('ptit').textContent=p.title;document.getElementById('pq').textContent=p.q;document.getElementById('pans').textContent='정답: '+p.ans;document.getElementById('pkp').textContent=p.kp;document.getElementById('ptms').innerHTML=p.terms.map(t=>`<span class="ttag">${t}</span>`).join('');}
-function togP(){const b=document.getElementById('prfb'),c=document.getElementById('pchev');b.classList.toggle('op');c.style.transform=b.classList.contains('op')?'rotate(180deg)':'';}
-function togSec(id){document.getElementById(id).classList.toggle('op');}
+function loadVid(){
+  const u=document.getElementById('vUrl').value.trim();if(!u)return;
+  const v=document.getElementById('vP');
+  v.style.display='block';document.getElementById('vph').style.display='none';
+  v.src=u;v.load();
+}
 
-// ═══════════════════════════════════
-//  Video
-// ═══════════════════════════════════
-function loadVid(){const u=document.getElementById('vUrl').value.trim();if(!u)return;const v=document.getElementById('vP');v.style.display='block';document.getElementById('vph').style.display='none';v.src=u;v.load();}
-function vidOk(){const v=document.getElementById('vP'),dur=v.duration;if(!dur||isNaN(dur))return;const t1=Math.floor(dur/3),t2=Math.floor(dur*2/3);document.getElementById('sst0').textContent=`${fmt(0)}~${fmt(t1)}`;document.getElementById('sst1').textContent=`${fmt(t1)}~${fmt(t2)}`;document.getElementById('sst2').textContent=`${fmt(t2)}~끝`;document.getElementById('segW').style.display='block';}
-function vidErr(){document.getElementById('vP').style.display='none';document.getElementById('vph').innerHTML='<i class="ti ti-alert-triangle" style="font-size:18px;color:#f59e0b"></i><span style="font-size:10px">영상 로드 실패 — ↗ 버튼으로 새 탭</span>';document.getElementById('vph').style.display='flex';}
+function loadVidAndScore(){
+  const u=document.getElementById('vUrl').value.trim();if(!u){runAI(false);return;}
+  const v=document.getElementById('vP');
+  v.style.display='block';document.getElementById('vph').style.display='none';
+  v.src=u;v.load();
+}
+
+function vidOk(){
+  const v=document.getElementById('vP'),dur=v.duration;
+  if(!dur||isNaN(dur))return;
+  if(pendingAutoScore){
+    pendingAutoScore=false;
+    runAI(true);
+  }
+}
+
+function vidErr(){
+  document.getElementById('vph').innerHTML='<i class="ti ti-alert-triangle" style="font-size:18px;color:#f59e0b"></i><span style="font-size:10px">영상 로드 실패 — ↗ 새탭에서 열기</span>';
+  document.getElementById('vph').style.display='flex';
+  document.getElementById('vP').style.display='none';
+}
+
 function openT(){const u=document.getElementById('vUrl').value.trim();if(u)window.open(u,'_blank');}
-function fmt(s){return`${Math.floor(s/60)}:${String(Math.round(s%60)).padStart(2,'0')}`}
-function jSeg(i){const v=document.getElementById('vP');if(!v.duration)return;v.currentTime=[v.duration*.08,v.duration*.38,v.duration*.72][i];v.play();['sg0','sg1','sg2'].forEach((id,j)=>document.getElementById(id).classList.toggle('act',i===j));}
 
-// ═══════════════════════════════════
-//  Score Display
-// ═══════════════════════════════════
-function setScoreItem(key,score,reason,missed){
-  S[key]=score;
-  const pt=document.getElementById('pts-'+key);
-  const bar=document.getElementById('bar-'+key);
-  const rsn=document.getElementById('rsn-'+key);
-  const sl=document.getElementById('sl-'+key);
-  const av=document.getElementById('av-'+key);
-  if(pt)pt.textContent=score;
-  if(bar)bar.style.width=(score*10)+'%';
-  if(rsn&&reason)rsn.textContent=reason;
-  if(sl){sl.value=score;}
-  if(av)av.textContent=score;
-}
-function setPersonaScore(key,score,reason){
-  S[key]=score;
-  const pt=document.getElementById('pts-'+key);
-  const av=document.getElementById('av-'+key);
-  const sl=document.getElementById('sl-'+key);
-  if(pt)pt.textContent=score;
-  if(av)av.textContent=score;
-  if(sl)sl.value=score;
-}
-function updAllBars(){
-  ['concept','term','acc','logic','board','speak'].forEach(k=>{
-    const bar=document.getElementById('bar-'+k);
-    const pt=document.getElementById('pts-'+k);
-    if(bar)bar.style.width=(S[k]*10)+'%';
-    if(pt)pt.textContent=S[k];
+// ── 프레임 캡처 핵심 함수들 ───────────────────────────────────
+
+/** Promise 기반 seek — 타임아웃 초과 시 resolve(false)로 안전하게 종료 */
+function seekTo(video, time, timeout=4000){
+  return new Promise(resolve=>{
+    const timer=setTimeout(()=>{video.removeEventListener('seeked',handler);resolve(false);},timeout);
+    function handler(){clearTimeout(timer);video.removeEventListener('seeked',handler);resolve(true);}
+    // 이미 해당 위치면 즉시 완료
+    if(Math.abs(video.currentTime-time)<0.5){clearTimeout(timer);resolve(true);return;}
+    video.addEventListener('seeked',handler);
+    video.currentTime=time;
   });
-  ['bar-time'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.width=(S.time*10)+'%';});
-  const pt=document.getElementById('pts-time');if(pt)pt.textContent=S.time;
 }
-function updTotal(){
-  const s1=S.concept+S.term,s2=S.time+S.acc+S.logic,s3=S.board+S.speak,s4=S.ex+S.eng+S.peer;
+
+/** 특정 시각 프레임 밝기 반환 — CORS·타임아웃 시 null */
+async function getFrameBrightness(video, time){
+  try{
+    const ok=await seekTo(video,time,3000);
+    if(!ok)return null;
+    const c=document.createElement('canvas');c.width=64;c.height=36;
+    const ctx=c.getContext('2d');ctx.drawImage(video,0,0,64,36);
+    const d=ctx.getImageData(0,0,64,36).data;
+    let sum=0;for(let i=0;i<d.length;i+=4)sum+=(d[i]+d[i+1]+d[i+2])/3;
+    return sum/(64*36);
+  }catch(e){return null;}
+}
+
+/**
+ * 실제 유효 재생시간 감지 — 최대 4개 지점만 확인 (빠름)
+ * 95%→85%→75%→65% 순서로 체크, 어두우면 해당 구간이 공백
+ */
+async function detectActualDuration(video){
+  const total=video.duration;
+  if(!total||isNaN(total))return total||0;
+  const checkPoints=[0.95,0.85,0.75,0.65];
+  let actualEnd=total;
+  for(const ratio of checkPoints){
+    const t=total*ratio;
+    const b=await getFrameBrightness(video,t);
+    if(b===null)return total; // CORS 등 오류 → total 그대로
+    if(b>10){actualEnd=total*ratio+(total*0.1); break;} // 이 지점은 밝음 → 여기까지는 유효
+    actualEnd=t; // 어두움 → 더 앞으로
+  }
+  return Math.min(actualEnd, total);
+}
+
+/** 특정 시각 프레임 base64 JPEG 캡처 — 실패 시 null */
+async function captureFrameAt(video, time){
+  try{
+    const ok=await seekTo(video,time,4000);
+    if(!ok)return null;
+    const c=document.createElement('canvas');c.width=640;c.height=360;
+    const ctx=c.getContext('2d');ctx.drawImage(video,0,0,640,360);
+    return c.toDataURL('image/jpeg',0.75).split(',')[1];
+  }catch(e){return null;}
+}
+
+/** 3구간 프레임 캡처 — 각 구간 4초 타임아웃 */
+async function captureThreeFrames(video, duration){
+  const pts=[duration*0.15,duration*0.5,duration*0.82];
+  const labels=['도입부','전개부','마무리'];
+  const frames=[];
+  for(let i=0;i<pts.length;i++){
+    setProgress(`📸 ${labels[i]} 캡처 중... (${i+1}/3)`,12+i*5);
+    frames.push(await captureFrameAt(video,pts[i]));
+  }
+  return frames;
+}
+
+// ── AI API 호출 ───────────────────────────────────────────────
+
+async function callTextAI(prompt){
+  const apiKey=localStorage.getItem('apiKey');
+  if(!apiKey)throw new Error('NO_KEY');
+  const res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content:prompt}]})
+  });
+  if(res.status===401){localStorage.removeItem('apiKey');throw new Error('INVALID_KEY');}
+  const d=await res.json();
+  const raw=(d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim();
+  try{return JSON.parse((raw.match(/\{[\s\S]*\}/)||['{}'])[0]);}catch(e){return{};}
+}
+
+async function callVisionAI(textPrompt, frames){
+  const apiKey=localStorage.getItem('apiKey');
+  if(!apiKey)throw new Error('NO_KEY');
+  const content=[];
+  const labels=['[구간1 — 도입부]','[구간2 — 전개부]','[구간3 — 마무리]'];
+  frames.forEach((f,i)=>{
+    if(f){
+      content.push({type:'text',text:labels[i]});
+      content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:f}});
+    }
+  });
+  content.push({type:'text',text:textPrompt});
+  const res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content}]})
+  });
+  if(res.status===401){localStorage.removeItem('apiKey');throw new Error('INVALID_KEY');}
+  const d=await res.json();
+  const raw=(d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim();
+  try{return JSON.parse((raw.match(/\{[\s\S]*\}/)||['{}'])[0]);}catch(e){return{};}
+}
+
+// ── 채점 메인 ─────────────────────────────────────────────────
+
+function setProgress(txt,pct){
+  document.getElementById('aiStepTxt').textContent=txt;
+  document.getElementById('aiProgBar').style.width=pct+'%';
+}
+
+async function runAI(hasVideo){
+  const apiKey=localStorage.getItem('apiKey');
+  if(!apiKey){showApiModal();showEmpty();return;}
+
+  showLoading('AI 심사 시작...', 0);
+  capturedFrames=[];visionUsed=false;
+
+  const q=queue[curI]||{};
+  const p=PD[cGr]?.[cPr-1]||{title:'',q:'',ans:'',kp:'',terms:[]};
+  const video=document.getElementById('vP');
+
+  try{
+    // ── Phase 1: 영상 분석 (실제 재생시간 + 프레임 캡처) ──────
+    if(hasVideo && video.readyState>=1 && video.duration){
+      setProgress('🎬 실제 재생시간 감지 중... (공백구간 제외)', 5);
+
+      // 전체 영상 분석에 15초 타임아웃 — 초과 시 엑셀 시간으로 폴백
+      const videoAnalysis = async ()=>{
+        detectedDuration=await detectActualDuration(video);
+        calcTimeScore(detectedDuration, video.duration);
+        setProgress('📸 판서 분석용 영상 캡처 중...', 10);
+        capturedFrames=await captureThreeFrames(video, detectedDuration);
+      };
+      const timeout15s = new Promise(r=>setTimeout(r,15000));
+      await Promise.race([videoAnalysis(), timeout15s]);
+
+      // 타임아웃으로 분석 미완료 시 엑셀 시간 사용
+      if(!detectedDuration){
+        detectedDuration=q.durationSec||0;
+        calcTimeScore(detectedDuration, detectedDuration);
+      }
+
+      const successCount=capturedFrames.filter(Boolean).length;
+      visionUsed=successCount>0;
+
+      // 캡처 상태 표시
+      showCaptureStatus(visionUsed, capturedFrames, video.duration, detectedDuration);
+
+      // 결과 패널에 이미지 표시
+      if(visionUsed){
+        document.getElementById('visionCaptures').style.display='block';
+        document.getElementById('delivBadge').textContent='Vision AI 영상 직접 분석';
+        document.getElementById('delivBadge').style.background='#EAF3DE';
+        document.getElementById('delivBadge').style.color='#3B6D11';
+        const labels=['도입부','전개부','마무리'];
+        document.getElementById('visionCapGrid').innerHTML=capturedFrames.map((f,i)=>
+          f?`<div><img class="cap-img" src="data:image/jpeg;base64,${f}"><div class="cap-lbl">${labels[i]}</div></div>`
+           :`<div><div class="cap-img" style="display:flex;align-items:center;justify-content:center;color:#777;font-size:9px">캡처불가</div><div class="cap-lbl">${labels[i]}</div></div>`
+        ).join('');
+      }else{
+        document.getElementById('visionCaptures').style.display='none';
+        document.getElementById('delivBadge').textContent='텍스트 추정 (CORS 제한)';
+        document.getElementById('delivBadge').style.background='#FEF9C3';
+        document.getElementById('delivBadge').style.color='#92400E';
+      }
+    }else{
+      // 영상 없음 — 엑셀 시간 사용
+      const ds=q.durationSec||0;
+      detectedDuration=ds;
+      calcTimeScore(ds, ds);
+      document.getElementById('durInfo').textContent=`실제 재생시간: 영상 미로드 (엑셀 값 ${q.duration||'-'} 사용)`;
+    }
+
+    // ── Phase 2: 정량 채점 (개념·완성도) ─────────────────────
+    setProgress('📊 개념·완성도 AI 채점 중...', 35);
+    const durFmt=detectedDuration?fmt(detectedDuration):(q.duration||'정보없음');
+    const pr1=`당신은 수학말하기대회 전문 심사위원입니다. 정량 채점을 수행하세요.
+
+[학생 정보]
+학년: ${cGr} / 문항: ${p.title}
+문제: ${p.q}
+정답: ${p.ans}
+핵심포인트: ${p.kp}
+필수용어(${p.terms.length}개): ${p.terms.join(', ')}
+실제 발표시간: ${durFmt}
+팀명: ${q.teamName} / 캠퍼스: ${q.campus||''}
+
+[채점 기준]
+개념선정(0~10): 중1 교육과정 적합성 및 개념 명확성
+용어정리(0~10): 필수용어 포함 추정 (누락 1개당 -2점)
+정확성(0~10): 수학적 내용 정확성
+논리성(0~10): 설명 흐름의 논리성
+
+[이유 우선 채점 원칙 — 반드시 준수]
+① 각 항목의 이유(~이유 필드)를 먼저 2문장으로 작성한 뒤, 그 이유에 근거하여 점수를 결정하세요.
+② 이유와 점수는 반드시 일치해야 합니다. 긍정적 이유 → 높은 점수, 부정적 이유 → 낮은 점수.
+③ 변별력 있게 채점하세요. 6~7점은 "평균 수준"이며, 8점 이상은 명백히 우수한 경우만 해당합니다.
+④ 모든 항목에 7~8점을 주는 것은 채점 포기입니다.
+⑤ 부정적 이유를 쓰면서 8점 이상, 긍정적 이유를 쓰면서 5점 이하를 줄 수 없습니다.
+
+JSON만 응답 (이유 먼저, 점수 나중):
+{"개념선정이유":"2문장","개념선정":숫자,"용어정리이유":"2문장","용어정리":숫자,"정확성이유":"2문장","정확성":숫자,"논리성이유":"2문장","논리성":숫자}`;
+
+    const r1=await callTextAI(pr1);
+    SC.concept=clamp(r1.개념선정??7);SC.term=clamp(r1.용어정리??7);
+    SC.acc=clamp(r1.정확성??7);SC.logic=clamp(r1.논리성??6);
+    aiReasons.r1=`[개념선정] ${r1.개념선정이유||''}\n[용어정리] ${r1.용어정리이유||''}`;
+    aiReasons.r2=`[정확성] ${r1.정확성이유||''}\n[논리성] ${r1.논리성이유||''}`;
+
+    // ── Phase 3: 전달력 (Vision 또는 텍스트) ─────────────────
+    setProgress(visionUsed?'📸 판서·발표 영상 직접 분석 중...':'✍️ 전달력 AI 추정 채점 중...', 60);
+
+    if(visionUsed && capturedFrames.some(Boolean)){
+      const pr2=`당신은 수학말하기대회 전문 심사위원입니다. 위에 첨부된 3구간 영상 캡처 이미지를 직접 분석하여 전달력을 채점하세요.
+
+[채점 기준 — 실제 이미지 기반으로 판단]
+판서(0~10): 화이트보드/칠판 글씨 명확성, 색상 활용, 핵심어 강조, 정리 수준
+말하기(0~10): 발표자 자신감·자세, 카메라 응시, 제스처·표정, 대본 의존도
+
+점수 기준: 10=매우 우수, 8~9=우수, 6~7=보통, 4~5=미흡, 0~3=불량
+보이지 않는 요소(음성 크기·발음 등)는 화면 분위기로 추정하세요.
+학년: ${cGr} / 문항: ${p.title}
+
+[이유 우선 채점 원칙 — 반드시 준수]
+① 판서이유와 말하기이유를 각각 2문장으로 먼저 작성한 뒤, 그 이유에 근거하여 점수를 결정하세요.
+② 이유와 점수는 반드시 일치해야 합니다.
+③ 6~7점은 "보통 수준"이며, 8점 이상은 이미지에서 명백히 우수한 근거가 보여야 합니다.
+
+JSON만 응답 (이유 먼저, 점수 나중):
+{"판서이유":"2문장","판서":숫자,"말하기이유":"2문장","말하기":숫자}`;
+      const r2=await callVisionAI(pr2, capturedFrames);
+      SC.board=clamp(r2.판서??6);SC.speak=clamp(r2.말하기??6);
+      aiReasons.r3=`[판서] ${r2.판서이유||''}\n[말하기] ${r2.말하기이유||''}`;
+    }else{
+      const pr2=`당신은 수학말하기대회 심사위원입니다. 영상 캡처 불가로 텍스트 기반 추정 채점합니다.
+학년: ${cGr} / 문항: ${p.title} / 발표시간: ${durFmt}
+
+[이유 우선 채점 원칙]
+① 판서이유와 말하기이유를 각각 2문장으로 먼저 작성한 뒤, 그 이유에 근거하여 점수를 결정하세요.
+② 6~7점은 중1 평균 수준이며, 발표시간과 문항 특성을 고려해 변별력 있게 채점하세요.
+③ 이유와 점수는 반드시 일치해야 합니다.
+
+JSON만 응답: {"판서이유":"2문장","판서":숫자,"말하기이유":"2문장","말하기":숫자}`;
+      const r2=await callTextAI(pr2);
+      SC.board=clamp(r2.판서??6);SC.speak=clamp(r2.말하기??6);
+      aiReasons.r3=`[판서] ${r2.판서이유||''}\n[말하기] ${r2.말하기이유||''}\n[주의: 영상 캡처 불가 — 텍스트 기반 추정 채점]`;
+    }
+
+    // ── Phase 4: 창의성 ───────────────────────────────────────
+    setProgress('🤖 AI 창의성 페르소나 채점 중...', 80);
+    const pr3=`당신은 수학말하기대회 AI 심사위원단(3인 페르소나)입니다.
+학년: ${cGr} / 문항: ${p.title} / 문제: ${p.q}
+발표시간: ${durFmt} / 팀명: ${q.teamName}
+
+[채점 항목]
+① 수학교사 — 예시(0~10): 예시의 수학적 적절성·참신함, 실생활 연결, 개념 심화 여부
+② 또래학생 — 흥미유발(0~10): 같은 학년이 흥미를 느낄 발표였는지
+③ 또래학생 — 또래이해(0~10): 같은 학년이 이해하기 쉬운 설명이었는지
+
+[이유 우선 채점 원칙 — 반드시 준수]
+① 각 항목의 이유를 먼저 2문장으로 작성한 뒤, 그 이유에 근거하여 점수를 결정하세요.
+② 이유와 점수는 반드시 일치해야 합니다.
+③ 6~7점은 "보통 수준"이며, 8점 이상은 명백히 우수한 경우만 해당합니다.
+④ 모든 항목에 같은 점수를 주지 마세요. 페르소나별로 다른 시각을 반영하세요.
+
+JSON만 응답 (이유 먼저, 점수 나중):
+{"예시이유":"2문장","예시":숫자,"흥미유발이유":"2문장","흥미유발":숫자,"또래이해이유":"2문장","또래이해":숫자,"수학교사피드백":"2~3문장","또래학생피드백":"2~3문장","발표코치피드백":"창의적 표현과 발표 스타일 2~3문장"}`;
+    const r3=await callTextAI(pr3);
+    SC.ex=clamp(r3.예시??6);SC.eng=clamp(r3.흥미유발??6);SC.peer=clamp(r3.또래이해??6);
+    aiReasons.fb1=`[예시] ${r3.예시이유||''}\n\n${r3.수학교사피드백||''}`;
+    aiReasons.fb2=`[흥미유발] ${r3.흥미유발이유||''}\n[또래이해] ${r3.또래이해이유||''}\n\n${r3.또래학생피드백||''}`;
+    aiReasons.fb3=r3.발표코치피드백||'';
+
+    setProgress('✅ 채점 완료!',100);
+    setTimeout(()=>{applyScoresToUI();showResult();},400);
+
+  }catch(err){
+    if(err.message==='INVALID_KEY'){alert('API 키가 유효하지 않습니다.');showApiModal();}
+    else if(err.message==='NO_KEY'){showApiModal();}
+    else{alert('AI 채점 오류: '+err.message);}
+    showEmpty();
+  }
+}
+
+// ── 시간 채점 (실제 감지 시간 기반) ─────────────────────────
+function calcTimeScore(actualSec, totalSec){
+  const d=Math.round(actualSec)||0;
+  const el=document.getElementById('tR');
+  const info=document.getElementById('durInfo');
+  if(!d){el.className='tr tna';el.textContent='측정 실패';SC.time=0;}
+  else if(d>=180&&d<=300){el.className='tr tok';el.textContent=`✅ ${fmt(d)} → 10점`;SC.time=10;}
+  else if((d>=150&&d<180)||(d>300&&d<=330)){el.className='tr twn';el.textContent=`⚠️ ${fmt(d)} → 7점`;SC.time=7;}
+  else{SC.time=d>=120&&d<=360?4:0;el.className='tr tbd';el.textContent=`❌ ${fmt(d)} → ${SC.time}점`;}
+  document.getElementById('vlTm').textContent=SC.time;
+  const diffTxt=(totalSec&&totalSec!==actualSec)?` (전체 ${fmt(totalSec)} 중 유효 ${fmt(actualSec)})`:fmt(d);
+  if(info)info.textContent=`실제 유효 재생시간: ${diffTxt}`;
+  syncTotals();
+}
+
+function showCaptureStatus(success, frames, total, actual){
+  const box=document.getElementById('capStatus');
+  const txt=document.getElementById('capStatusTxt');
+  const grid=document.getElementById('capGrid');
+  box.style.display='block';
+  if(success){
+    const n=frames.filter(Boolean).length;
+    txt.innerHTML=`<span style="color:var(--cg)">✅ Vision 캡처 성공 (${n}/3구간)</span> — 전체 ${fmt(total)} / 유효 ${fmt(actual)}`;
+    const labels=['도입','전개','마무리'];
+    grid.innerHTML=frames.map((f,i)=>
+      f?`<div><img class="cap-img" src="data:image/jpeg;base64,${f}"><div class="cap-lbl">${labels[i]}</div></div>`
+       :`<div><div class="cap-img" style="display:flex;align-items:center;justify-content:center;color:#777;font-size:9px">CORS</div><div class="cap-lbl">${labels[i]}</div></div>`
+    ).join('');
+  }else{
+    txt.innerHTML=`<span style="color:#92400E">⚠️ 캡처 불가 (CORS 제한)</span> — 텍스트 기반 전달력 채점`;
+    grid.innerHTML='';
+  }
+}
+
+function showLoading(txt,pct){
+  document.getElementById('emptyBox').style.display='none';
+  document.getElementById('resultBox').style.display='none';
+  document.getElementById('aiLoadBox').style.display='block';
+  setProgress(txt,pct);
+}
+function showResult(){
+  document.getElementById('aiLoadBox').style.display='none';
+  document.getElementById('emptyBox').style.display='none';
+  document.getElementById('resultBox').style.display='block';
+}
+function showEmpty(){
+  document.getElementById('aiLoadBox').style.display='none';
+  document.getElementById('resultBox').style.display='none';
+  document.getElementById('emptyBox').style.display='block';
+}
+
+function clamp(v,mn=0,mx=10){return Math.min(mx,Math.max(mn,Math.round(Number(v)||0)));}
+
+function applyScoresToUI(){
+  const map=[['slC','vlC','concept'],['slT','vlT','term'],['slAc','vlAc','acc'],['slLg','vlLg','logic'],['slBd','vlBd','board'],['slSp','vlSp','speak'],['slEx','vlEx','ex'],['slEn','vlEn','eng'],['slPe','vlPe','peer']];
+  map.forEach(([sl,vl,key])=>{document.getElementById(sl).value=SC[key];document.getElementById(vl).textContent=SC[key];});
+  document.getElementById('r1').textContent=aiReasons.r1;
+  document.getElementById('r2').textContent=aiReasons.r2;
+  document.getElementById('r3').textContent=aiReasons.r3;
+  document.getElementById('fb1').textContent=aiReasons.fb1;
+  document.getElementById('fb2').textContent=aiReasons.fb2;
+  document.getElementById('fb3').textContent=aiReasons.fb3;
+  syncTotals();
+}
+
+function manualSync(key,val){
+  SC[key]=parseInt(val)||0;
+  const vl={concept:'vlC',term:'vlT',acc:'vlAc',logic:'vlLg',board:'vlBd',speak:'vlSp',ex:'vlEx',eng:'vlEn',peer:'vlPe'};
+  if(vl[key])document.getElementById(vl[key]).textContent=SC[key];
+  syncTotals();
+}
+
+function syncTotals(){
+  const s1=SC.concept+SC.term,s2=SC.time+SC.acc+SC.logic,s3=SC.board+SC.speak,s4=SC.ex+SC.eng+SC.peer;
   const tot=s1+s2+s3+s4;
-  document.getElementById('pts1').textContent=s1;
-  document.getElementById('pts2').textContent=s2;
-  document.getElementById('pts3').textContent=s3;
-  document.getElementById('pts4').textContent=s4;
-  document.getElementById('d12').textContent=s1+s2;
-  document.getElementById('d3').textContent=s3;
-  document.getElementById('d4').textContent=s4;
+  document.getElementById('d12').textContent=`${s1+s2}/50`;
+  document.getElementById('d3').textContent=`${s3}/20`;
+  document.getElementById('d4').textContent=`${s4}/30`;
   document.getElementById('dTot').textContent=tot;
-  document.getElementById('totBig').textContent=tot;
-  document.getElementById('tb1').textContent=s1+s2;
-  document.getElementById('tb2').textContent=s3;
-  document.getElementById('tb3').textContent=s4;
+  document.getElementById('tot1').textContent=`${s1}/20`;
+  document.getElementById('tot2').textContent=`${s2}/30`;
+  document.getElementById('tot3').textContent=`${s3}/20`;
+  document.getElementById('tot4').textContent=`${s4}/30`;
+  document.getElementById('totAll').textContent=`${tot}/100`;
+  document.getElementById('fs1').innerHTML=`${s1}<span style="font-size:11px;color:var(--cs)">/20</span>`;
+  document.getElementById('fs2').innerHTML=`${s2}<span style="font-size:11px;color:var(--cs)">/30</span>`;
+  document.getElementById('fs3').innerHTML=`${s3}<span style="font-size:11px;color:var(--cs)">/20</span>`;
+  document.getElementById('fs4').innerHTML=`${s4}<span style="font-size:11px;color:var(--cs)">/30</span>`;
   const grd=tot>=90?'최우수':tot>=80?'우수':tot>=70?'장려':'참가';
   const clr=tot>=90?'var(--cg)':tot>=70?'var(--ci)':'var(--cs)';
-  document.getElementById('totGrade').textContent=`/ 100점 — ${grd}`;
-  document.getElementById('totGrade').style.color=clr;
-  document.getElementById('tb4').textContent=grd;
-  document.getElementById('tb4').style.color=clr;
-  document.getElementById('totBig').style.color=clr;
-  // Also update 또래학생 combined score
-  const epCombined=S.eng+S.peer;
-  const epEl=document.getElementById('pts-ep');if(epEl)epEl.textContent=epCombined;
-}
-function adj(key,val){
-  S[key]=parseInt(val);
-  const pt=document.getElementById('pts-'+key);
-  const bar=document.getElementById('bar-'+key);
-  const av=document.getElementById('av-'+key);
-  if(pt)pt.textContent=val;
-  if(bar)bar.style.width=(parseInt(val)*10)+'%';
-  if(av)av.textContent=val;
-  // 또래학생 combined
-  if(key==='eng'||key==='peer'){
-    const ep=document.getElementById('pts-ep');if(ep)ep.textContent=S.eng+S.peer;
-  }
-  updTotal();
-  // 슬라이더 조정 시 불일치 재검사
-  const rsnKey = (key==='eng'||key==='peer') ? 'rsn-ep' : 'rsn-'+key;
-  const reason=document.getElementById(rsnKey)?.textContent||'';
-  applyMismatchUI(key, reason, S[key]);
+  document.getElementById('fsTot').textContent=tot;document.getElementById('fsTot').style.color=clr;
+  document.getElementById('fsGrd').textContent=grd;document.getElementById('fsGrd').style.color=clr;
 }
 
-// ═══════════════════════════════════
-//  AI 자동 채점
-// ═══════════════════════════════════
-async function autoScore(){
-  const apiKey=localStorage.getItem('apiKey');
-  if(!apiKey){showApiModal();return;}
-  const q=queue[curI];if(!q)return;
-  const p=PD[cGr]?.[cPr-1]||{};
-  const btn=document.getElementById('aiBtn');
-  const progEl=document.getElementById('aiProg');
-  const progTxt=document.getElementById('aiProgTxt');
-  const progFill=document.getElementById('aiProgFill');
-  const subEl=document.getElementById('aiboxSub');
-
-  btn.disabled=true;btn.innerHTML='⏳ 채점 중...';
-  progEl.style.display='block';
-  subEl.textContent='AI가 심사 기준에 따라 전 영역을 채점하고 있습니다...';
-
-  // 시간 준수 즉시 계산
-  if(q.durationSec>0)applyTimeScore(q.durationSec);
-
-  // ── CALL 1: 정량 + 전달력 ──
-  progTxt.textContent='📊 정량 채점 + 전달력 분석 중... (1/2)';
-  progFill.style.width='30%';
-
-  const prompt1=`당신은 수학말하기대회 심사위원입니다. 아래 기준으로 엄격하고 변별력 있게 채점 후 JSON만 응답하세요.
-
-[학생 정보]
-- 학년: ${q.grade}, 문항: ${q.problem}번 ${p.title||''}
-- 발표시간: ${q.durationSec}초 (${fmt(q.durationSec)})
-- 영상URL: ${q.url||'없음'}
-
-[필수 개념 용어]
-${(p.terms||[]).join(', ')}
-
-[항목별 점수 기준표]
-
-■ 개념선정 (10점)
-9~10: 학년 수준에 완벽히 맞고 개념의 핵심을 깊이 있게 이해·표현함
-7~8: 학년 수준에 맞고 개념을 충분히 이해한 수준
-5~6: 학년 수준이나 설명의 깊이나 정확성이 아쉬움
-3~4: 개념 선정은 했으나 이해가 불충분하거나 표현이 부적절
-0~2: 학년에 맞지 않거나 개념 자체를 오해하고 있음
-
-■ 용어정리 (10점)
-위 필수 용어 중 누락된 것을 termsMissed에 명시하고 누락 1개당 -2점 적용.
-단, 사용한 용어를 잘못 설명하거나 문맥 없이 나열만 하면 추가 감점.
-
-■ 정확성 (10점)
-9~10: 수학적 오류 전혀 없이 정확하게 설명
-7~8: 사소한 실수 1개 이하 (큰 흐름은 정확)
-5~6: 오류 2개 또는 부분적으로 부정확한 설명
-3~4: 오류 3개 이상 또는 중요한 개념 오류 1개
-0~2: 핵심 개념 오류 다수 또는 수학적으로 잘못된 설명이 지배적
-
-■ 논리성 (10점)
-아래 5항목 충족 수 기준으로 채점:
-① 불필요한 내용 없이 핵심만 설명
-② 정확한 수학 언어·기호 사용
-③ 설명 순서와 흐름의 일관성
-④ 후행학습(이 개념 이후 배울 내용)과의 연계
-⑤ 선행학습(이미 배운 내용)과의 연계
-5항목→9점, 4항목→7점, 3항목→5점, 2항목→3점, 1항목→1점, 0항목→0점
-
-■ 판서 (10점)
-9~10: 가독성 높고 색상 활용, 핵심 강조, 필수 용어 모두 판서, 설명과 자연스럽게 연동
-7~8: 위 기준 중 4가지 충족
-5~6: 3가지 충족
-3~4: 2가지 이하 충족, 전반적으로 판서 품질 낮음
-0~2: 판서가 거의 없거나 매우 부실하여 도움이 되지 않음
-
-■ 말하기 (10점)
-9~10: 대본 없이 유창하고 자신감 있게 청중을 응시하며 발표, 속도·발음·제스처 모두 탁월
-7~8: 전반적으로 자연스럽고 자신감 있음, 일부 아쉬운 점 있음
-5~6: 보통 수준, 일부 대본 의존 또는 긴장감 보임
-3~4: 대본 의존이 뚜렷하거나 전달력이 부족함
-0~2: 매우 부자연스럽거나 전달력이 심각하게 낮음
-
-[절대 원칙 - 반드시 준수]
-① 작성한 이유(Reason)와 점수가 반드시 일치해야 합니다.
-   예) 이유에서 "정확하게 설명했다"고 쓰면 → 8점 이상 / "오류가 있었다"고 쓰면 → 6점 이하
-② 변별력 있게 채점하세요. 모든 항목에 7점을 주는 것은 채점 포기입니다.
-   잘한 항목(8~10점)과 부족한 항목(1~5점)을 명확히 구분하세요.
-③ 6~7점은 "평균적인 수준"입니다. 기대보다 잘했으면 8점 이상, 기대에 미달하면 5점 이하를 주세요.
-
-응답 방법: 각 항목의 평가 이유(Reason)를 먼저 작성하고, 그 내용을 보고 점수(Score)를 결정하세요.
-JSON만 응답(다른 텍스트 없이):
-{"conceptReason":"2문장","conceptScore":0~10,"termReason":"2문장","termScore":0~10,"termsMissed":["누락된필수용어"],"accuracyReason":"2문장","accuracyScore":0~10,"logicReason":"2문장","logicScore":0~10,"boardReason":"2문장","boardScore":0~10,"speakReason":"2문장","speakScore":0~10}`;
-
-  // ── CALL 2: AI 창의성 ──
-  const prompt2=`당신은 수학말하기대회 창의성 심사위원으로 3가지 페르소나를 담당합니다. 변별력 있게 채점하세요.
-
-[학생 정보]
-- 학년: ${q.grade}, 문항: ${q.problem}번 ${p.title||''}
-- 발표시간: ${fmt(q.durationSec)}, 영상URL: ${q.url||'없음'}
-
-[페르소나별 점수 기준표]
-
-🧮 수학교사 페르소나 — 예시 점수 (10점)
-9~10: 수학적으로 완벽하고 매우 창의적, 개념 이해를 크게 도운 탁월한 예시
-7~8: 수학적으로 적절하고 개념 설명에 효과적인 예시
-5~6: 예시를 활용했으나 수학적 엄밀성 또는 연결성 부족
-3~4: 예시가 부적절하거나 개념 이해에 도움이 안 됨
-0~2: 의미 있는 예시가 없거나 수학적으로 틀린 예시
-
-🎒 또래학생 페르소나 — 흥미유발 (10점)
-9~10: 시작부터 끝까지 집중하게 만드는 탁월한 발표, 인상적인 요소 있음
-7~8: 전반적으로 흥미롭고 집중력 유지, 일부 평범한 구간 존재
-5~6: 흥미로운 부분과 지루한 부분이 섞여 있음
-3~4: 전반적으로 지루하고 흥미 요소가 부족함
-0~2: 매우 단조롭거나 청중의 흥미를 끌지 못함
-
-🎒 또래학생 페르소나 — 또래이해 (10점)
-9~10: 같은 학년이 완벽히 이해할 수 있는 명확하고 쉬운 설명, 어려운 부분 없음
-7~8: 대부분 이해 가능, 한두 군데 어려운 부분이 있으나 전체 흐름은 따라갈 수 있음
-5~6: 절반 정도 이해 가능, 생략되거나 너무 빠른 부분 존재
-3~4: 이해하기 어려운 부분이 많아 따라가기 힘듦
-0~2: 같은 학년 학생이 이해하기 매우 어려움, 설명이 불충분
-
-🎤 발표코치 페르소나 — 종합 피드백
-발표의 강점 2~3가지와 구체적 개선점 2~3가지를 서술하세요.
-
-[절대 원칙 - 반드시 준수]
-① 피드백 내용(Reason)과 점수가 반드시 일치해야 합니다.
-   - "쉽게 이해할 수 있었다"고 쓰면 또래이해 8점 이상
-   - "따라가기 어려웠다"고 쓰면 5점 이하
-   - "매우 흥미로웠다"고 쓰면 흥미유발 8점 이상
-   - 긍정적 피드백에 7점 이하를 주거나, 부정적 피드백에 8점 이상을 주면 안 됩니다.
-② 흥미유발과 또래이해는 다른 기준이므로 다른 점수가 나올 수 있습니다.
-③ 변별력 있게 채점하세요. 모든 항목에 7~8점을 주는 것은 채점 포기입니다.
-
-응답 방법: 각 평가 이유(Reason)를 먼저 작성하고, 그 내용을 보고 점수(Score)를 결정하세요.
-JSON만 응답(다른 텍스트 없이):
-{"exReason":"2문장","exScore":0~10,"engReason":"2문장","engScore":0~10,"peerReason":"2문장","peerScore":0~10,"coachFeedback":"강점: [구체적 강점 2~3가지] / 개선점: [구체적 개선점 2~3가지]"}`;
-
-  const fetchAI=async(pr)=>{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1200,messages:[{role:'user',content:pr}]})});
-    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'API오류 '+res.status);}
-    const d=await res.json();
-    const raw=(d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim();
-    return JSON.parse((raw.match(/\{[\s\S]*\}/)||['{}'])[0]);
-  };
-
-  try{
-    const [r1,r2]=await Promise.all([fetchAI(prompt1),fetchAI(prompt2)]);
-    progFill.style.width='90%';progTxt.textContent='결과 반영 중...';
-
-    // Apply Call 1 results
-    setScoreItem('concept',Math.min(10,Math.max(0,r1.conceptScore||0)),r1.conceptReason||'');
-    setScoreItem('term',Math.min(10,Math.max(0,r1.termScore||0)),r1.termReason||'');
-    setScoreItem('acc',Math.min(10,Math.max(0,r1.accuracyScore||0)),r1.accuracyReason||'');
-    setScoreItem('logic',Math.min(10,Math.max(0,r1.logicScore||0)),r1.logicReason||'');
-    setScoreItem('board',Math.min(10,Math.max(0,r1.boardScore||0)),r1.boardReason||'');
-    setScoreItem('speak',Math.min(10,Math.max(0,r1.speakScore||0)),r1.speakReason||'');
-    // Missed terms
-    if(r1.termsMissed?.length){
-      document.getElementById('miss-term').innerHTML=r1.termsMissed.map(t=>`<span class="miss-tag">❌ ${t}</span>`).join('');
-    }else{document.getElementById('miss-term').innerHTML='<span style="font-size:10px;color:var(--cg)">✅ 누락 용어 없음</span>';}
-
-    // Apply Call 2 results
-    const exScore=Math.min(10,Math.max(0,r2.exScore||0));
-    const engScore=Math.min(10,Math.max(0,r2.engScore||0));
-    const peerScore=Math.min(10,Math.max(0,r2.peerScore||0));
-    S.ex=exScore;S.eng=engScore;S.peer=peerScore;
-
-    document.getElementById('pts-ex').textContent=exScore;
-    document.getElementById('sl-ex').value=exScore;document.getElementById('av-ex').value=exScore;
-    document.getElementById('rsn-ex').textContent=r2.exReason||'';
-
-    document.getElementById('pts-eng').textContent=engScore;
-    document.getElementById('pts-peer').textContent=peerScore;
-    document.getElementById('pts-ep').textContent=engScore+peerScore;
-    document.getElementById('sl-eng').value=engScore;document.getElementById('av-eng').textContent=engScore;
-    document.getElementById('sl-peer').value=peerScore;document.getElementById('av-peer').textContent=peerScore;
-    document.getElementById('rsn-ep').textContent=(r2.engReason||'')+(r2.peerReason?'\n또래이해: '+r2.peerReason:'');
-
-    document.getElementById('rsn-coach').textContent=r2.coachFeedback||'피드백을 생성하지 못했습니다.';
-
-    updTotal();
-    progFill.style.width='100%';
-    progTxt.textContent='✅ 전 영역 AI 채점 완료';
-    subEl.textContent='채점이 완료됐습니다. 슬라이더로 점수를 조정한 후 저장하세요.';
-    btn.innerHTML='🔄 재채점';btn.disabled=false;
-    // 채점 완료 후 불일치 감지 실행
-    setTimeout(runMismatchCheck, 300);
-
-  }catch(e){
-    progTxt.textContent='❌ 오류: '+e.message;
-    subEl.textContent='API 키를 확인하거나 재시도하세요.';
-    btn.innerHTML='⚡ 재시도';btn.disabled=false;
-    if(e.message.includes('401'))localStorage.removeItem('apiKey');
-  }
+function restoreResult(res){
+  if(!res)return;
+  Object.assign(SC,{concept:res.scores?.개념선정??10,term:res.scores?.용어정리??10,time:res.scores?.시간준수??0,acc:res.scores?.정확성??10,logic:res.scores?.논리성??0,board:res.scores?.판서??0,speak:res.scores?.말하기??0,ex:res.scores?.예시??0,eng:res.scores?.흥미유발??0,peer:res.scores?.또래이해??0});
+  aiReasons={r1:res.reasons?.개념||'',r2:res.reasons?.완성도||'',r3:res.reasons?.전달력||'',fb1:res.reasons?.fb1||'',fb2:res.reasons?.fb2||'',fb3:res.reasons?.fb3||''};
+  if(res.durInfo)document.getElementById('durInfo').textContent=res.durInfo;
+  applyScoresToUI();showResult();
 }
 
-// ═══════════════════════════════════
-//  불일치 감지 & 자동 보정
-// ═══════════════════════════════════
-const POS_KW=['좋았','탁월','명확','자연스러','완벽','효과적','우수','뛰어','훌륭','정확','잘','쉽게','이해','흥미','집중','자신감','유창','충족','인상','창의','적절','풍부'];
-const NEG_KW=['부족','미흡','어려','오류','불충분','아쉬','낮은','부실','어색','의존','산만','불명확','모호','혼란','빠져','생략','반복','너무 빠','따라가기'];
-
-function detectMismatch(reason, score){
-  if(!reason||reason.includes('대기'))return null;
-  const pos=POS_KW.filter(w=>reason.includes(w)).length;
-  const neg=NEG_KW.filter(w=>reason.includes(w)).length;
-  // 명백히 긍정적인데 7점 미만
-  if(pos>=2&&neg===0&&score<7)return{dir:'up',msg:`이유는 긍정적인데 점수가 낮습니다 (현재 ${score}점)`};
-  // 명백히 부정적인데 7점 초과
-  if(neg>=2&&pos===0&&score>7)return{dir:'down',msg:`이유는 부정적인데 점수가 높습니다 (현재 ${score}점)`};
-  return null;
+function rerunAI(){
+  Object.assign(SC,{concept:0,term:0,time:0,acc:0,logic:0,board:0,speak:0,ex:0,eng:0,peer:0});
+  aiReasons={r1:'',r2:'',r3:'',fb1:'',fb2:'',fb3:''};
+  capturedFrames=[];visionUsed=false;pendingAutoScore=false;
+  document.getElementById('capStatus').style.display='none';
+  document.getElementById('visionCaptures').style.display='none';
+  const video=document.getElementById('vP');
+  runAI(video.readyState>=1&&!!video.duration);
 }
 
-function applyMismatchUI(key, reason, score){
-  const si=document.getElementById('si-'+key);
-  if(!si)return;
-  // 기존 경고 제거
-  si.querySelectorAll('.si-alert').forEach(el=>el.remove());
-  si.classList.remove('mismatch');
-  const m=detectMismatch(reason,score);
-  if(!m)return;
-  si.classList.add('mismatch');
-  const alert=document.createElement('div');
-  alert.className='si-alert';
-  alert.innerHTML=`<span class="si-alert-msg">⚠️ ${m.msg}</span><button class="recal-btn" onclick="recalibrate('${key}')">자동 보정</button>`;
-  si.appendChild(alert);
-}
-
-async function recalibrate(key){
-  const apiKey=localStorage.getItem('apiKey');if(!apiKey)return;
-  const reason=document.getElementById('rsn-'+key)?.textContent||'';
-  if(!reason)return;
-  const btn=document.querySelector(`#si-${key} .recal-btn`);
-  if(btn){btn.disabled=true;btn.textContent='보정 중...';}
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:5,messages:[{role:'user',content:`다음 평가 내용을 읽고 가장 적합한 점수(0~10)를 숫자 하나만 응답하세요.\n\n평가: "${reason}"\n\n기준:\n매우 긍정적 표현 다수 → 8~10점\n긍정적 표현 위주 → 7~8점\n긍정·부정 혼재 → 5~6점\n부정적 표현 위주 → 3~4점\n매우 부정적 표현 다수 → 0~2점\n\n숫자만:`}]})
-    });
-    const d=await res.json();
-    const newScore=parseInt(d.content?.[0]?.text?.trim());
-    if(!isNaN(newScore)&&newScore>=0&&newScore<=10){
-      adj(key,newScore);
-      document.getElementById('sl-'+key).value=newScore;
-      // 경고 제거
-      const si=document.getElementById('si-'+key);
-      if(si){si.classList.remove('mismatch');si.querySelectorAll('.si-alert').forEach(el=>el.remove());}
-    }
-  }catch(e){if(btn){btn.disabled=false;btn.textContent='재시도';}}
-}
-
-function runMismatchCheck(){
-  const checks=[
-    {key:'concept',rsn:'rsn-concept'},{key:'term',rsn:'rsn-term'},
-    {key:'acc',rsn:'rsn-acc'},{key:'logic',rsn:'rsn-logic'},
-    {key:'board',rsn:'rsn-board'},{key:'speak',rsn:'rsn-speak'},
-    {key:'ex',rsn:'rsn-ex'},{key:'eng',rsn:'rsn-ep'},{key:'peer',rsn:'rsn-ep'}
-  ];
-  checks.forEach(({key,rsn})=>{
-    const reason=document.getElementById(rsn)?.textContent||'';
-    applyMismatchUI(key,reason,S[key]);
-  });
-}
-
-function rScores(){
-  Object.assign(S,{concept:10,term:10,time:0,acc:10,logic:0,board:0,speak:0,ex:0,eng:0,peer:0});
-  ['concept','term','acc','logic','board','speak','ex','eng','peer'].forEach(k=>{
-    const sl=document.getElementById('sl-'+k);const av=document.getElementById('av-'+k);
-    const defaults={concept:10,term:10,acc:10,logic:0,board:0,speak:0,ex:0,eng:0,peer:0};
-    if(sl)sl.value=defaults[k]||0;if(av)av.textContent=defaults[k]||0;
-    const bar=document.getElementById('bar-'+k);if(bar)bar.style.width=(defaults[k]||0)*10+'%';
-    const pt=document.getElementById('pts-'+k);if(pt)pt.textContent=defaults[k]||0;
-    const rsn=document.getElementById('rsn-'+k);if(rsn)rsn.textContent='AI 채점 대기 중...';
-  });
-  document.getElementById('miss-term').innerHTML='';
-  document.getElementById('rsn-coach').textContent='AI 채점 대기 중...';
-  document.getElementById('pts-ep').textContent='-';
-  document.getElementById('pts-time').textContent='0';
-  document.getElementById('bar-time').style.width='0%';
-  document.getElementById('rsn-time').textContent='발표 시간에서 자동 계산';
-  updTotal();
-}
-
-// ═══════════════════════════════════
-//  Save & Navigate
-// ═══════════════════════════════════
 function saveNext(){
+  const s1=SC.concept+SC.term,s2=SC.time+SC.acc+SC.logic,s3=SC.board+SC.speak,s4=SC.ex+SC.eng+SC.peer;
   if(curI>=0&&curI<queue.length){
-    const s1=S.concept+S.term,s2=S.time+S.acc+S.logic,s3=S.board+S.speak,s4=S.ex+S.eng+S.peer;
     queue[curI].status2='done';
     queue[curI].result={
-      scores:{...S},
+      scores:{개념선정:SC.concept,용어정리:SC.term,시간준수:SC.time,정확성:SC.acc,논리성:SC.logic,판서:SC.board,말하기:SC.speak,예시:SC.ex,흥미유발:SC.eng,또래이해:SC.peer},
       totals:{개념적절성:s1,설명완성도:s2,전달력:s3,창의성:s4,총점:s1+s2+s3+s4},
-      reasons:{
-        concept:document.getElementById('rsn-concept')?.textContent||'',
-        term:document.getElementById('rsn-term')?.textContent||'',
-        acc:document.getElementById('rsn-acc')?.textContent||'',
-        logic:document.getElementById('rsn-logic')?.textContent||'',
-        board:document.getElementById('rsn-board')?.textContent||'',
-        speak:document.getElementById('rsn-speak')?.textContent||'',
-        ex:document.getElementById('rsn-ex')?.textContent||'',
-        ep:document.getElementById('rsn-ep')?.textContent||'',
-        coach:document.getElementById('rsn-coach')?.textContent||''
-      },
-      missed:Array.from(document.querySelectorAll('#miss-term .miss-tag')).map(el=>el.textContent.replace('❌ ','')),
-      ts:new Date().toISOString()
+      reasons:{개념:document.getElementById('r1').textContent,완성도:document.getElementById('r2').textContent,전달력:document.getElementById('r3').textContent,fb1:document.getElementById('fb1').textContent,fb2:document.getElementById('fb2').textContent,fb3:document.getElementById('fb3').textContent},
+      durInfo:document.getElementById('durInfo').textContent,
+      visionUsed,ts:new Date().toISOString()
     };
   }
   svTmp();updProg();
   const ni=queue.findIndex((q,i)=>i>curI&&q.status2==='pending');
   if(ni>=0){jQ(ni);}
-  else if(queue.every(q=>q.status2==='done')){alert(`🎉 전체 ${queue.length}건 채점 완료!\n[엑셀저장] 버튼으로 결과를 다운로드하세요.`);showView('v2');}
+  else if(queue.every(q=>q.status2==='done')){alert(`🎉 전체 ${queue.length}건 채점 완료!\n[엑셀 저장] 버튼으로 결과를 다운로드하세요.`);showView('v2');}
   else{const fi=queue.findIndex(q=>q.status2==='pending');if(fi>=0)jQ(fi);}
 }
+
 function prevR(){if(curI>0)jQ(curI-1);}
 function updProg(){const done=queue.filter(q=>q.status2==='done').length,tot=queue.length;document.getElementById('progF').style.width=tot>0?`${done/tot*100}%`:'0%';document.getElementById('progT').textContent=`${curI+1}/${tot}`;}
 function svTmp(){try{localStorage.setItem('mathJudgeData',JSON.stringify({queue,curI,ts:Date.now()}));}catch(e){}}
 
-// ═══════════════════════════════════
-//  Excel Export
-// ═══════════════════════════════════
 function doXL(){
   const done=queue.filter(q=>q.result);if(!done.length){alert('채점된 결과가 없습니다.');return;}
-  const rows=queue.map(q=>{const r=q.result;const base={'접수일':q.date,'브랜드':q.brand,'캠퍼스':q.campus,'학년':q.grade,'팀명':q.teamName,'팀원':q.members,'참가유형':q.type,'발표문제':q.problem+'번','영상주소':q.url,'영상시간':q.duration,'좋아요수':q.likes};if(!r)return{...base,'채점상태':'미완료'};return{...base,'채점상태':'완료','개념선정':r.scores.concept,'용어정리':r.scores.term,'개념적절성계':r.totals.개념적절성,'시간준수':r.scores.time,'정확성':r.scores.acc,'논리성':r.scores.logic,'설명완성도계':r.totals.설명완성도,'판서':r.scores.board,'말하기':r.scores.speak,'전달력계':r.totals.전달력,'예시(수학교사)':r.scores.ex,'흥미유발(또래)':r.scores.eng,'또래이해':r.scores.peer,'창의성계':r.totals.창의성,'개념사유':r.reasons.concept||'','용어사유':r.reasons.term||'','정확성사유':r.reasons.acc||'','논리성사유':r.reasons.logic||'','판서사유':r.reasons.board||'','말하기사유':r.reasons.speak||'','수학교사피드백':r.reasons.ex||'','또래학생피드백':r.reasons.ep||'','발표코치피드백':r.reasons.coach||'','총점':r.totals.총점,'등급':r.totals.총점>=90?'최우수':r.totals.총점>=80?'우수':r.totals.총점>=70?'장려':'참가','심사일시':r.ts};});
-  const ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=Object.keys(rows[0]||{}).map(k=>({wch:k.includes('피드백')||k.includes('사유')?40:k==='영상주소'?35:12}));
+  const rows=queue.map(q=>{
+    const r=q.result;
+    const base={'접수일':q.date,'브랜드':q.brand,'캠퍼스':q.campus,'학년':q.grade,'팀명':q.teamName,'팀원':q.members,'참가유형':q.type,'발표문제':q.problem+'번','영상주소':q.url,'영상시간':q.duration,'좋아요수':q.likes,'접수상태':q.status};
+    if(!r)return{...base,'채점상태':'미완료'};
+    return{...base,'채점상태':'완료','Vision채점여부':r.visionUsed?'O(영상캡처)':'X(텍스트추정)',
+      '개념선정':r.scores.개념선정,'용어정리':r.scores.용어정리,'개념적절성계':r.totals.개념적절성,'개념채점사유':r.reasons.개념,
+      '시간준수':r.scores.시간준수,'정확성':r.scores.정확성,'논리성':r.scores.논리성,'설명완성도계':r.totals.설명완성도,'완성도채점사유':r.reasons.완성도,
+      '판서':r.scores.판서,'말하기':r.scores.말하기,'전달력계':r.totals.전달력,'전달력채점사유':r.reasons.전달력,
+      '예시':r.scores.예시,'흥미유발':r.scores.흥미유발,'또래이해':r.scores.또래이해,'창의성계':r.totals.창의성,
+      'AI수학교사피드백':r.reasons.fb1||'','AI또래학생피드백':r.reasons.fb2||'','AI발표코치피드백':r.reasons.fb3||'',
+      '실제재생시간':r.durInfo||'','총점':r.totals.총점,
+      '등급':r.totals.총점>=90?'최우수':r.totals.총점>=80?'우수':r.totals.총점>=70?'장려':'참가','심사일시':r.ts
+    };
+  });
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=Object.keys(rows[0]||{}).map(k=>({wch:k.includes('피드백')||k.includes('사유')?40:k==='영상주소'?35:14}));
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'심사결과');
-  const gm={최우수:0,우수:0,장려:0,참가:0};done.forEach(q=>{const g=q.result.totals.총점>=90?'최우수':q.result.totals.총점>=80?'우수':q.result.totals.총점>=70?'장려':'참가';gm[g]++;});
-  const sm=[{'항목':'전체','값':queue.length},{'항목':'완료','값':done.length},{'항목':'미완료','값':queue.length-done.length},{'항목':'','값':''},{'항목':'최우수(90↑)','값':gm.최우수},{'항목':'우수(80~89)','값':gm.우수},{'항목':'장려(70~79)','값':gm.장려},{'항목':'참가(70↓)','값':gm.참가}];
-  if(done.length)sm.push({'항목':'','값':''},{'항목':'평균점수','값':Math.round(done.reduce((a,q)=>a+q.result.totals.총점,0)/done.length)});
-  const ws2=XLSX.utils.json_to_sheet(sm);ws2['!cols']=[{wch:18},{wch:10}];XLSX.utils.book_append_sheet(wb,ws2,'집계요약');
+  const gm={최우수:0,우수:0,장려:0,참가:0};
+  queue.forEach(q=>{if(q.result){const g=q.result.totals.총점>=90?'최우수':q.result.totals.총점>=80?'우수':q.result.totals.총점>=70?'장려':'참가';gm[g]++;}});
+  const dq=queue.filter(q=>q.result);
+  const sm=[{'항목':'전체 접수','값':queue.length},{'항목':'채점 완료','값':done.length},{'항목':'미완료','값':queue.length-done.length},{'항목':'','값':''},{'항목':'최우수 (90↑)','값':gm.최우수},{'항목':'우수 (80~89)','값':gm.우수},{'항목':'장려 (70~79)','값':gm.장려},{'항목':'참가 (70↓)','값':gm.참가}];
+  if(dq.length)sm.push({'항목':'','값':''},{'항목':'평균 총점','값':Math.round(dq.reduce((a,q)=>a+q.result.totals.총점,0)/dq.length)},{'항목':'Vision채점 건수','값':dq.filter(q=>q.result.visionUsed).length});
+  const ws2=XLSX.utils.json_to_sheet(sm);ws2['!cols']=[{wch:20},{wch:10}];XLSX.utils.book_append_sheet(wb,ws2,'집계요약');
   const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
-  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([out],{type:'application/octet-stream'})),download:`수학말하기_심사결과_${new Date().toLocaleDateString('ko').replace(/\./g,'').replace(/ /g,'')}.xlsx`});
+  const dt=new Date().toLocaleDateString('ko').replace(/\. /g,'').replace('.','');
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([out],{type:'application/octet-stream'})),download:`수학말하기대회_심사결과_${dt}.xlsx`});
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href);
 }
 
-// ═══════════════════════════════════
-//  Drag & Drop + Init
-// ═══════════════════════════════════
 const uz=document.getElementById('upZone');
 uz.addEventListener('dragover',e=>{e.preventDefault();uz.classList.add('drag');});
 uz.addEventListener('dragleave',()=>uz.classList.remove('drag'));
@@ -1032,7 +1019,14 @@ uz.addEventListener('drop',e=>{e.preventDefault();uz.classList.remove('drag');co
 
 window.addEventListener('load',()=>{
   updApiSt();
-  try{const raw=localStorage.getItem('mathJudgeData');if(!raw)return;const d=JSON.parse(raw);if(!d.queue?.length)return;queue.splice(0);queue.push(...d.queue);curI=d.curI||-1;const ago=Math.round((Date.now()-d.ts)/60000);if(confirm(`이전 채점 데이터 있음\n${queue.length}건 · ${ago}분 전 저장\n\n불러오시겠습니까?`)){showView('v2');}else{queue.length=0;curI=-1;localStorage.removeItem('mathJudgeData');}}catch(e){}
+  try{
+    const raw=localStorage.getItem('mathJudgeData');if(!raw)return;
+    const d=JSON.parse(raw);if(!d.queue?.length)return;
+    queue.splice(0);queue.push(...d.queue);curI=d.curI||-1;
+    const ago=Math.round((Date.now()-d.ts)/60000);
+    if(confirm(`이전 채점 데이터가 있습니다.\n${queue.length}건 / ${ago}분 전 저장\n\n불러올까요?`)){showView('v2');}
+    else{queue.length=0;curI=-1;localStorage.removeItem('mathJudgeData');}
+  }catch(e){}
 });
 </script>
 </body>
