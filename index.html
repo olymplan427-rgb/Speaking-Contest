@@ -423,6 +423,7 @@ let queue=[],curI=-1,cGr='중1',cPr=1;
 let capturedFrames=[]; // base64 strings (null = CORS failed)
 let detectedDuration=0;
 let visionUsed=false;
+let pendingAutoScore=false; // jQ에서 세팅, vidOk에서 소비
 
 // ── 뷰 전환 ───────────────────────────────────────────────────
 function showView(id){
@@ -496,7 +497,17 @@ function jQ(i){
   document.getElementById('capGrid').innerHTML='';
   updProg();
   if(q.result){restoreResult(q.result);}
-  else{showEmpty();if(q.url){loadVidAndScore();}else{runAI(false);}}
+  else{
+    showEmpty();
+    if(q.url){
+      pendingAutoScore=true;
+      loadVidAndScore();
+      // 영상 로딩이 10초 안에 안 되면 텍스트 채점으로 시작
+      setTimeout(()=>{
+        if(pendingAutoScore){pendingAutoScore=false;runAI(false);}
+      },10000);
+    }else{runAI(false);}
+  }
 }
 
 function loadProb(gr,n){
@@ -526,18 +537,14 @@ function loadVidAndScore(){
   const u=document.getElementById('vUrl').value.trim();if(!u){runAI(false);return;}
   const v=document.getElementById('vP');
   v.style.display='block';document.getElementById('vph').style.display='none';
-  showLoading('🎬 영상 로딩 중...', 2);
   v.src=u;v.load();
-  // vidOk 이벤트에서 자동으로 runAI(true) 호출됨
 }
 
 function vidOk(){
   const v=document.getElementById('vP'),dur=v.duration;
   if(!dur||isNaN(dur))return;
-  // 영상 자동 채점 모드인 경우 (jQ에서 loadVidAndScore 호출 시)
-  if(document.getElementById('aiLoadBox').style.display!=='none'||
-     document.getElementById('emptyBox').style.display!=='none'){
-    // 아직 채점이 시작 안 됐거나 로딩 중이면 실제 분석 시작
+  if(pendingAutoScore){
+    pendingAutoScore=false;
     runAI(true);
   }
 }
@@ -552,69 +559,69 @@ function openT(){const u=document.getElementById('vUrl').value.trim();if(u)windo
 
 // ── 프레임 캡처 핵심 함수들 ───────────────────────────────────
 
-/** Promise 기반 seek */
-function seekTo(video, time, timeout=6000){
-  return new Promise((resolve,reject)=>{
-    const timer=setTimeout(()=>reject(new Error('seek timeout')),timeout);
-    function handler(){clearTimeout(timer);video.removeEventListener('seeked',handler);resolve();}
+/** Promise 기반 seek — 타임아웃 초과 시 resolve(false)로 안전하게 종료 */
+function seekTo(video, time, timeout=4000){
+  return new Promise(resolve=>{
+    const timer=setTimeout(()=>{video.removeEventListener('seeked',handler);resolve(false);},timeout);
+    function handler(){clearTimeout(timer);video.removeEventListener('seeked',handler);resolve(true);}
+    // 이미 해당 위치면 즉시 완료
+    if(Math.abs(video.currentTime-time)<0.5){clearTimeout(timer);resolve(true);return;}
     video.addEventListener('seeked',handler);
     video.currentTime=time;
   });
 }
 
-/** 프레임의 평균 밝기(0~255) 반환 — CORS 오류 시 null */
+/** 특정 시각 프레임 밝기 반환 — CORS·타임아웃 시 null */
 async function getFrameBrightness(video, time){
   try{
-    await seekTo(video, time, 4000);
-    const c=document.createElement('canvas');c.width=80;c.height=45;
-    const ctx=c.getContext('2d');ctx.drawImage(video,0,0,80,45);
-    const d=ctx.getImageData(0,0,80,45).data;
+    const ok=await seekTo(video,time,3000);
+    if(!ok)return null;
+    const c=document.createElement('canvas');c.width=64;c.height=36;
+    const ctx=c.getContext('2d');ctx.drawImage(video,0,0,64,36);
+    const d=ctx.getImageData(0,0,64,36).data;
     let sum=0;for(let i=0;i<d.length;i+=4)sum+=(d[i]+d[i+1]+d[i+2])/3;
-    return sum/(80*45);
+    return sum/(64*36);
   }catch(e){return null;}
 }
 
 /**
- * 공백(무음·암전) 구간을 제외한 실제 유효 재생시간 감지
- * 뒤에서 5초씩 스캔해서 밝기>12인 마지막 프레임 위치를 찾음
+ * 실제 유효 재생시간 감지 — 최대 4개 지점만 확인 (빠름)
+ * 95%→85%→75%→65% 순서로 체크, 어두우면 해당 구간이 공백
  */
 async function detectActualDuration(video){
   const total=video.duration;
-  if(!total||isNaN(total))return 0;
+  if(!total||isNaN(total))return total||0;
+  const checkPoints=[0.95,0.85,0.75,0.65];
   let actualEnd=total;
-  const step=5, minScan=total*0.4;
-  for(let t=total-2; t>minScan; t-=step){
+  for(const ratio of checkPoints){
+    const t=total*ratio;
     const b=await getFrameBrightness(video,t);
-    if(b===null){
-      // CORS — 픽셀 분석 불가, total 그대로 사용
-      return total;
-    }
-    if(b>12){actualEnd=Math.min(t+step,total);break;}
-    actualEnd=t;
+    if(b===null)return total; // CORS 등 오류 → total 그대로
+    if(b>10){actualEnd=total*ratio+(total*0.1); break;} // 이 지점은 밝음 → 여기까지는 유효
+    actualEnd=t; // 어두움 → 더 앞으로
   }
-  return Math.max(actualEnd,10);
+  return Math.min(actualEnd, total);
 }
 
-/** 특정 시각의 프레임을 base64 JPEG로 캡처 — CORS 실패 시 null */
+/** 특정 시각 프레임 base64 JPEG 캡처 — 실패 시 null */
 async function captureFrameAt(video, time){
   try{
-    await seekTo(video, time, 5000);
+    const ok=await seekTo(video,time,4000);
+    if(!ok)return null;
     const c=document.createElement('canvas');c.width=640;c.height=360;
     const ctx=c.getContext('2d');ctx.drawImage(video,0,0,640,360);
-    const data=c.toDataURL('image/jpeg',0.75);
-    return data.split(',')[1];
+    return c.toDataURL('image/jpeg',0.75).split(',')[1];
   }catch(e){return null;}
 }
 
-/** 3구간 프레임 캡처 (도입·전개·마무리) */
+/** 3구간 프레임 캡처 — 각 구간 4초 타임아웃 */
 async function captureThreeFrames(video, duration){
-  const pts=[duration*0.15, duration*0.5, duration*0.82];
+  const pts=[duration*0.15,duration*0.5,duration*0.82];
   const labels=['도입부','전개부','마무리'];
   const frames=[];
   for(let i=0;i<pts.length;i++){
-    setProgress(`📸 ${labels[i]} 캡처 중... (${i+1}/3)`, 12+i*5);
-    const f=await captureFrameAt(video, pts[i]);
-    frames.push(f);
+    setProgress(`📸 ${labels[i]} 캡처 중... (${i+1}/3)`,12+i*5);
+    frames.push(await captureFrameAt(video,pts[i]));
   }
   return frames;
 }
@@ -680,11 +687,23 @@ async function runAI(hasVideo){
     // ── Phase 1: 영상 분석 (실제 재생시간 + 프레임 캡처) ──────
     if(hasVideo && video.readyState>=1 && video.duration){
       setProgress('🎬 실제 재생시간 감지 중... (공백구간 제외)', 5);
-      detectedDuration=await detectActualDuration(video);
-      calcTimeScore(detectedDuration, video.duration);
 
-      setProgress('📸 판서 분석용 영상 캡처 중...', 10);
-      capturedFrames=await captureThreeFrames(video, detectedDuration);
+      // 전체 영상 분석에 15초 타임아웃 — 초과 시 엑셀 시간으로 폴백
+      const videoAnalysis = async ()=>{
+        detectedDuration=await detectActualDuration(video);
+        calcTimeScore(detectedDuration, video.duration);
+        setProgress('📸 판서 분석용 영상 캡처 중...', 10);
+        capturedFrames=await captureThreeFrames(video, detectedDuration);
+      };
+      const timeout15s = new Promise(r=>setTimeout(r,15000));
+      await Promise.race([videoAnalysis(), timeout15s]);
+
+      // 타임아웃으로 분석 미완료 시 엑셀 시간 사용
+      if(!detectedDuration){
+        detectedDuration=q.durationSec||0;
+        calcTimeScore(detectedDuration, detectedDuration);
+      }
+
       const successCount=capturedFrames.filter(Boolean).length;
       visionUsed=successCount>0;
 
@@ -915,7 +934,7 @@ function restoreResult(res){
 function rerunAI(){
   Object.assign(SC,{concept:0,term:0,time:0,acc:0,logic:0,board:0,speak:0,ex:0,eng:0,peer:0});
   aiReasons={r1:'',r2:'',r3:'',fb1:'',fb2:'',fb3:''};
-  capturedFrames=[];visionUsed=false;
+  capturedFrames=[];visionUsed=false;pendingAutoScore=false;
   document.getElementById('capStatus').style.display='none';
   document.getElementById('visionCaptures').style.display='none';
   const video=document.getElementById('vP');
