@@ -19,8 +19,7 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
 .minp{width:100%;padding:9px 12px;border-radius:8px;border:.5px solid var(--b2);background:var(--bs);color:var(--cp);font-size:13px;font-family:inherit;margin-bottom:10px}
 .minp:focus{outline:none;border-color:var(--ci)}
 .mnote{font-size:10px;color:var(--cs);line-height:1.6;padding:8px 10px;background:var(--bs);border-radius:7px;margin-bottom:12px}
-.mrow{display:flex;gap:6px;justify-content:flex-end}
-.mnote a{color:var(--ci)}
+.mrow{display:flex;gap:6px;justify-content:flex-end}.mnote a{color:var(--ci)}
 /* Upload */
 .upw{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;gap:20px;min-height:100vh}
 .upz{width:100%;max-width:500px;border:2px dashed var(--b2);border-radius:12px;padding:36px 24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bp)}
@@ -64,35 +63,33 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
 .stpc{flex:1;overflow-y:auto;padding:12px}
 /* Score card */
 .scard{border:.5px solid var(--bt);border-radius:8px;overflow:hidden;margin-bottom:10px}
-.scardh{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bs);font-size:12px;font-weight:500;border-bottom:.5px solid var(--bt)}
+.scardh{display:flex;align-items:center;gap:8px;padding:9px 12px;font-size:12px;font-weight:500;border-bottom:.5px solid var(--bt)}
 .scardb{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
 .srow{display:flex;align-items:center;gap:8px}
-.slabel{font-size:11px;color:var(--cs);min-width:70px}
-.sval{font-size:16px;font-weight:600;color:var(--ci);min-width:36px;text-align:right}
+.slabel{font-size:11px;color:var(--cs);min-width:80px}
+.sval{font-size:16px;font-weight:600;color:var(--ci);min-width:28px;text-align:right}
 .smax{font-size:10px;color:var(--cs)}
 .slr2{flex:1;display:flex;align-items:center;gap:6px}
 .slr2 input[type=range]{flex:1;accent-color:var(--ci)}
 .reason-box{background:var(--bs);border-radius:6px;padding:8px 10px;font-size:11px;line-height:1.7;color:var(--cp);border:.5px solid var(--bt);white-space:pre-wrap;min-height:36px}
-.reason-box.editable{cursor:text}
 .reason-box[contenteditable=true]:focus{outline:none;border-color:var(--ci)}
-.ai-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:500;background:var(--bi);color:var(--ci)}
-.ai-badge.green{background:var(--bg);color:var(--cg)}
-.loading-overlay{position:absolute;inset:0;background:rgba(var(--bp-rgb),.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:10;border-radius:8px}
-/* Loading spinner */
-@keyframes spin{to{transform:rotate(360deg)}}
-.spin{animation:spin .8s linear infinite;display:inline-block}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:500}
+.badge-blue{background:var(--bi);color:var(--ci)}
+.badge-green{background:var(--bg);color:var(--cg)}
+.badge-orange{background:#FEF9C3;color:#92400E}
+.badge-red{background:#FEF2F2;color:#991B1B}
+@media(prefers-color-scheme:dark){.badge-orange{background:#412402;color:#FAC775}.badge-red{background:#3B0D0D;color:#FCA5A5}}
 /* Section header colors */
 .sh-blue{background:#EDF4FF;color:#185FA5}
 .sh-green{background:#EDF7F2;color:#0F6E56}
 .sh-orange{background:#FFF9ED;color:#854F0B}
 .sh-purple{background:#F5F3FF;color:#6D28D9}
-@media(prefers-color-scheme:dark){
-  .sh-blue{background:#042C53;color:#85B7EB}
-  .sh-green{background:#04342C;color:#5DCAA5}
-  .sh-orange{background:#412402;color:#FAC775}
-  .sh-purple{background:#2E1065;color:#C4B5FD}
-}
-/* Final summary */
+@media(prefers-color-scheme:dark){.sh-blue{background:#042C53;color:#85B7EB}.sh-green{background:#04342C;color:#5DCAA5}.sh-orange{background:#412402;color:#FAC775}.sh-purple{background:#2E1065;color:#C4B5FD}}
+/* Captures preview */
+.cap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:4px}
+.cap-img{width:100%;aspect-ratio:16/9;border-radius:5px;object-fit:cover;border:.5px solid var(--bt);background:#111}
+.cap-lbl{font-size:9px;color:var(--cs);text-align:center;margin-top:2px}
+/* Final */
 .fg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
 .fc{text-align:center;padding:8px;background:var(--bs);border-radius:6px}
 .fn{font-size:20px;font-weight:500}.fl{font-size:10px;color:var(--cs);margin-bottom:2px}
@@ -102,16 +99,18 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
 /* Buttons */
 .btn{padding:6px 12px;border-radius:6px;border:.5px solid var(--b2);cursor:pointer;font-size:12px;font-family:inherit;transition:all .15s}
 .bpr{background:var(--ci);color:white;border-color:var(--ci)}.bpr:hover{opacity:.9}
-.bgr{background:#1d6f42;color:white;border-color:#1d6f42}.bgr:hover{background:#155131}
 .bsc{background:var(--bs)}.bsc:hover{background:var(--bp)}
 .bxl{background:#1d6f42;color:white;border-color:#1d6f42}
 .nxt{width:100%;padding:10px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;margin-top:10px;transition:background .15s}
 .nxt.green{background:#1d6f42;color:white}.nxt.green:hover{background:#155131}
-.nxt.blue{background:var(--ci);color:white}.nxt.blue:hover{opacity:.9}
-/* AI 진행 상태 */
-.ai-progress{background:var(--bi);border:.5px solid var(--bic);border-radius:8px;padding:14px;text-align:center}
-.ai-step{font-size:11px;color:var(--ci);margin-top:4px}
-/* 시간 뱃지 */
+/* Loading */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin .9s linear infinite;display:inline-block}
+.ai-progress{background:var(--bi);border:.5px solid var(--bic);border-radius:8px;padding:18px;text-align:center}
+.ai-step{font-size:11px;color:var(--ci);margin-top:4px;min-height:16px}
+.prog-bar{margin-top:10px;background:var(--bic);border-radius:4px;height:5px;overflow:hidden}
+.prog-fill{height:100%;background:var(--ci);border-radius:4px;transition:width .5s}
+/* Time badges */
 .tr{padding:5px 8px;border-radius:5px;font-size:10px}
 .tok{background:var(--bg);color:var(--cg)}.twn{background:#FEF9C3;color:#92400E}.tbd{background:#FEF2F2;color:#991B1B}.tna{background:var(--bs);color:var(--cs)}
 @media(prefers-color-scheme:dark){.twn{background:#412402;color:#FAC775}.tbd{background:#3B0D0D;color:#FCA5A5}}
@@ -120,7 +119,6 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
 </head>
 <body>
 
-<!-- API Modal -->
 <div class="mb" id="apiModal">
   <div class="md">
     <h2>🔑 Anthropic API 키 입력</h2>
@@ -139,8 +137,8 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
 <div class="upw">
   <div style="text-align:center">
     <div style="font-size:26px;font-weight:500">🎯 수학말하기대회 AI 심사 시스템</div>
-    <div style="font-size:13px;color:var(--cs);margin-top:6px">제9회 올림피아드수학 · 중1 · AI 전항목 자동 채점</div>
-    <div style="font-size:12px;color:var(--cs);margin-top:4px">엑셀 업로드 → 목록 확인 → AI가 100점 전항목 자동 채점 → 결과 다운로드</div>
+    <div style="font-size:13px;color:var(--cs);margin-top:6px">제9회 올림피아드수학 · Vision AI 영상 직접 분석</div>
+    <div style="font-size:12px;color:var(--cs);margin-top:4px">엑셀 업로드 → 영상 캡처 → AI 전항목 자동 채점 → 결과 다운로드</div>
   </div>
   <div class="upz" id="upZone" onclick="document.getElementById('xlIn').click()">
     <i class="ti ti-file-spreadsheet" style="font-size:44px;color:var(--ci)"></i>
@@ -164,7 +162,7 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
   <div class="rvh">
     <div>
       <div style="font-size:16px;font-weight:500">접수 목록 확인</div>
-      <div style="font-size:11px;color:var(--cs);margin-top:2px">학생을 클릭하면 AI가 전 항목을 자동 채점합니다</div>
+      <div style="font-size:11px;color:var(--cs);margin-top:2px">학생 클릭 → 영상 캡처 → AI 전항목 자동 채점</div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn bsc" style="font-size:11px" onclick="showView('v1')">← 다시 업로드</button>
@@ -197,8 +195,15 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
   </div>
   <div class="vbx">
     <div class="vph" id="vph"><i class="ti ti-player-play" style="font-size:20px"></i><span>URL 입력 후 ▶ 클릭</span></div>
-    <video id="vP" style="display:none;width:100%;height:100%;object-fit:contain" controls onloadedmetadata="vidOk()" onerror="vidErr()"></video>
+    <video id="vP" style="display:none;width:100%;height:100%;object-fit:contain" controls crossorigin="anonymous" onloadedmetadata="vidOk()" onerror="vidErr()"></video>
   </div>
+
+  <!-- 캡처 상태 및 미리보기 -->
+  <div id="capStatus" style="display:none;padding:6px 8px;border-radius:6px;font-size:10px;border:.5px solid var(--bt);background:var(--bp)">
+    <div id="capStatusTxt"></div>
+    <div class="cap-grid" id="capGrid"></div>
+  </div>
+
   <div class="sc">
     <div style="font-size:10px;font-weight:500;margin-bottom:4px;color:var(--cs)">실시간 채점 현황</div>
     <div class="sr"><span style="color:var(--cs)">개념·완성도</span><span style="font-weight:500" id="d12">0/50</span></div>
@@ -232,27 +237,26 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
   </div>
 
   <div class="stpc" id="stepCont">
-    <!-- AI 로딩 상태 -->
+
+    <!-- AI 로딩 -->
     <div id="aiLoadBox" style="display:none">
       <div class="ai-progress">
-        <div style="font-size:24px" class="spin" id="aiSpinIcon">🤖</div>
+        <div style="font-size:28px" class="spin" id="aiSpinIcon">🤖</div>
         <div style="font-size:13px;font-weight:500;margin-top:6px">AI 심사위원이 채점 중입니다</div>
         <div class="ai-step" id="aiStepTxt">준비 중...</div>
-        <div style="margin-top:10px;background:var(--bic);border-radius:4px;height:4px;overflow:hidden">
-          <div id="aiProgBar" style="height:100%;background:var(--ci);width:0%;transition:width .4s;border-radius:4px"></div>
-        </div>
+        <div class="prog-bar"><div id="aiProgBar" class="prog-fill" style="width:0%"></div></div>
       </div>
     </div>
 
-    <!-- 채점 결과 패널 -->
+    <!-- 채점 결과 -->
     <div id="resultBox" style="display:none">
 
-      <!-- 개념의 적절성 (20점) -->
+      <!-- 개념의 적절성 20점 -->
       <div class="scard">
         <div class="scardh sh-blue">
           <span>📊 개념의 적절성</span>
-          <span class="ai-badge" style="margin-left:auto">AI 채점</span>
-          <span style="font-size:11px;font-weight:600;color:var(--ci);margin-left:8px" id="tot1">-/20</span>
+          <span class="badge badge-blue" style="margin-left:auto">AI 텍스트 채점</span>
+          <span style="font-size:11px;font-weight:600;color:#185FA5;margin-left:8px" id="tot1">-/20</span>
         </div>
         <div class="scardb">
           <div class="srow">
@@ -266,24 +270,25 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
             <span class="sval" id="vlT">10</span><span class="smax">/10</span>
           </div>
           <div class="dv"></div>
-          <div style="font-size:10px;color:var(--cs);font-weight:500">AI 채점 사유</div>
-          <div class="reason-box editable" id="r1" contenteditable="true"></div>
+          <div style="font-size:10px;color:var(--cs);font-weight:500">AI 채점 사유 <span style="font-weight:400">(클릭하여 수정 가능)</span></div>
+          <div class="reason-box" id="r1" contenteditable="true"></div>
         </div>
       </div>
 
-      <!-- 설명의 완성도 (30점) -->
+      <!-- 설명의 완성도 30점 -->
       <div class="scard">
         <div class="scardh sh-green">
           <span>⏱ 설명의 완성도</span>
-          <span class="ai-badge" style="margin-left:auto">AI 채점</span>
-          <span style="font-size:11px;font-weight:600;color:var(--ci);margin-left:8px" id="tot2">-/30</span>
+          <span class="badge badge-blue" style="margin-left:auto">AI 텍스트 채점</span>
+          <span style="font-size:11px;font-weight:600;color:#0F6E56;margin-left:8px" id="tot2">-/30</span>
         </div>
         <div class="scardb">
           <div class="srow">
             <span class="slabel">시간 준수</span>
-            <div style="flex:1"><div id="tR" class="tr tna">-</div></div>
+            <div style="flex:1"><div id="tR" class="tr tna">영상 로드 전</div></div>
             <span class="sval" id="vlTm">0</span><span class="smax">/10</span>
           </div>
+          <div style="font-size:10px;padding:4px 7px;border-radius:5px;background:var(--bs)" id="durInfo">실제 재생시간: 측정 전</div>
           <div class="srow">
             <span class="slabel">정확성</span>
             <div class="slr2"><input type="range" id="slAc" min="0" max="10" value="10" oninput="manualSync('acc',this.value)"></div>
@@ -296,18 +301,23 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
           </div>
           <div class="dv"></div>
           <div style="font-size:10px;color:var(--cs);font-weight:500">AI 채점 사유</div>
-          <div class="reason-box editable" id="r2" contenteditable="true"></div>
+          <div class="reason-box" id="r2" contenteditable="true"></div>
         </div>
       </div>
 
-      <!-- 전달력 (20점) -->
+      <!-- 전달력 20점 -->
       <div class="scard">
         <div class="scardh sh-orange">
           <span>✍️ 전달력</span>
-          <span class="ai-badge" style="margin-left:auto">AI 채점</span>
-          <span style="font-size:11px;font-weight:600;color:var(--ci);margin-left:8px" id="tot3">-/20</span>
+          <span class="badge" id="delivBadge" style="margin-left:auto;background:#EAF3DE;color:#3B6D11">Vision AI 영상 분석</span>
+          <span style="font-size:11px;font-weight:600;color:#854F0B;margin-left:8px" id="tot3">-/20</span>
         </div>
         <div class="scardb">
+          <!-- 캡처 이미지 표시 (Vision 성공 시) -->
+          <div id="visionCaptures" style="display:none">
+            <div style="font-size:10px;color:var(--cs);font-weight:500;margin-bottom:4px">📸 AI가 분석한 영상 캡처 (3구간)</div>
+            <div class="cap-grid" id="visionCapGrid"></div>
+          </div>
           <div class="srow">
             <span class="slabel">판서</span>
             <div class="slr2"><input type="range" id="slBd" min="0" max="10" value="0" oninput="manualSync('board',this.value)"></div>
@@ -320,16 +330,16 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
           </div>
           <div class="dv"></div>
           <div style="font-size:10px;color:var(--cs);font-weight:500">AI 채점 사유</div>
-          <div class="reason-box editable" id="r3" contenteditable="true"></div>
+          <div class="reason-box" id="r3" contenteditable="true"></div>
         </div>
       </div>
 
-      <!-- AI 창의성 (30점) -->
+      <!-- AI 창의성 30점 -->
       <div class="scard">
         <div class="scardh sh-purple">
           <span>🤖 AI 창의성</span>
-          <span class="ai-badge green" style="margin-left:auto">AI 채점</span>
-          <span style="font-size:11px;font-weight:600;color:var(--ci);margin-left:8px" id="tot4">-/30</span>
+          <span class="badge badge-blue" style="margin-left:auto">AI 페르소나 채점</span>
+          <span style="font-size:11px;font-weight:600;color:#6D28D9;margin-left:8px" id="tot4">-/30</span>
         </div>
         <div class="scardb">
           <div class="srow">
@@ -358,7 +368,7 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
       </div>
 
       <!-- 최종 결과 -->
-      <div class="scard" id="finalCard">
+      <div class="scard">
         <div class="scardh" style="background:var(--bi)">
           <span>🏆 최종 결과</span>
           <span style="font-size:11px;font-weight:600;color:var(--ci);margin-left:auto" id="totAll">-/100</span>
@@ -380,7 +390,7 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
       <button class="nxt green" onclick="saveNext()" style="font-size:14px;padding:13px">💾 채점 저장 후 다음 학생으로 →</button>
       <div style="display:flex;gap:6px;margin-top:6px;margin-bottom:16px">
         <button class="btn bsc" style="flex:1" onclick="prevR()">◀ 이전 학생</button>
-        <button class="btn bsc" style="flex:1;color:#DC2626" onclick="if(confirm('현재 학생 채점을 초기화하고 재채점할까요?'))rerunAI()">🔄 재채점</button>
+        <button class="btn bsc" style="flex:1;color:#DC2626" onclick="if(confirm('재채점할까요?'))rerunAI()">🔄 재채점</button>
       </div>
     </div>
 
@@ -395,6 +405,7 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
 </div>
 
 <script>
+// ── 문항 데이터 ──────────────────────────────────────────────
 const PD={'중1':[
   {id:1,title:'1번 — 정수와 유리수',q:'절댓값이 x 이하인 정수의 개수가 101개일 때, 자연수 x에 대하여 옳은 것을 모두 고르시오.\n보기: ㄱ.짝수 ㄴ.5의 배수 ㄷ.약수 10개',ans:'ㄱ, ㄴ  (x=50)',kp:'2x+1=101 → x=50, 50=2×5²이므로 약수의 개수=6개',terms:['소수','합성수','거듭제곱','소인수','소인수분해','약수','약수의 개수','정수','양의 정수','음의 정수','절댓값','수직선','원점']},
   {id:2,title:'2번 — 문자와 식',q:'도형(5, 11, 3a-2, a+4)의 넓이를 a를 사용한 식으로 나타내시오.',ans:'21a+14',kp:'5(3a-2)+6(a+4)=15a-10+6a+24=21a+14',terms:['문자식','차수','다항식','일차식','동류항','분배법칙','계수','상수항']},
@@ -405,10 +416,15 @@ const PD={'중1':[
 
 const HMAP={'접수일':'date','브랜드':'brand','캠퍼스':'campus','학년':'grade','팀명':'teamName','팀원':'members','발표 문제':'problem','발표문제':'problem','발표 문항':'problem','발표문항':'problem','영상주소':'url','영상 주소':'url','영상url':'url','영상시간':'duration','영상 시간':'duration','좋아요 수':'likes','좋아요수':'likes','접수상태':'status'};
 
+// ── 상태 ──────────────────────────────────────────────────────
 const SC={concept:10,term:10,time:0,acc:10,logic:0,board:0,speak:0,ex:0,eng:0,peer:0};
 let aiReasons={r1:'',r2:'',r3:'',fb1:'',fb2:'',fb3:''};
 let queue=[],curI=-1,cGr='중1',cPr=1;
+let capturedFrames=[]; // base64 strings (null = CORS failed)
+let detectedDuration=0;
+let visionUsed=false;
 
+// ── 뷰 전환 ───────────────────────────────────────────────────
 function showView(id){
   ['v1','v2','v3'].forEach(v=>{const el=document.getElementById(v);el.classList.remove('on');el.style.display='none';});
   const el=document.getElementById(id);el.style.display='';el.classList.add('on');
@@ -419,11 +435,10 @@ function closeApiModal(){document.getElementById('apiModal').classList.remove('o
 function saveApiKey(){const k=document.getElementById('apiKeyInp').value.trim();if(!k||!k.startsWith('sk-')){alert('올바른 API 키를 입력하세요 (sk-ant-... 형식)');return;}localStorage.setItem('apiKey',k);closeApiModal();updApiSt();}
 function updApiSt(){
   const k=!!localStorage.getItem('apiKey');
-  const t=k?'✅ 등록됨':'❌ 미등록';
-  const s1=document.getElementById('apiSt1'),s2=document.getElementById('apiSt2');
-  if(s1)s1.textContent=t;if(s2)s2.textContent=k?'✅':'❌';
+  ['apiSt1','apiSt2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=k?'✅ 등록됨':'❌ 미등록';});
 }
 
+// ── 엑셀 파싱 ─────────────────────────────────────────────────
 function parseXL(inp){
   const f=inp.files[0];if(!f)return;
   const r=new FileReader();
@@ -446,10 +461,10 @@ function parseXL(inp){
   };
   r.readAsArrayBuffer(f);
 }
-
 function timeToSec(t){if(!t)return 0;const p=String(t).split(':').map(Number);return p.length===2?(p[0]||0)*60+(p[1]||0):p.length===3?(p[0]||0)*3600+(p[1]||0)*60+(p[2]||0):parseInt(t)||0;}
 function fmt(s){return`${Math.floor(s/60)}:${String(Math.round(s%60)).padStart(2,'0')}`}
 
+// ── 목록 렌더 ─────────────────────────────────────────────────
 function renderReview(){
   const tot=queue.length;
   if(!tot){document.getElementById('statGrid').innerHTML='';document.getElementById('revList').innerHTML='<div style="padding:20px;text-align:center;color:var(--cs)">업로드된 데이터가 없습니다.</div>';return;}
@@ -470,16 +485,18 @@ function startJudge(){
 function jQ(i){
   if(i<0||i>=queue.length)return;
   curI=i;const q=queue[i];
+  capturedFrames=[];detectedDuration=0;visionUsed=false;
   document.getElementById('vUrl').value=q.url||'';
   document.getElementById('jTeam').textContent=`${q.teamName}${q.members&&q.members!==q.teamName?' / '+q.members:''}`;
   document.getElementById('jInfo').textContent=`${q.brand||''} ${q.campus||''} · ${q.grade||''} · ${q.problem}번 · ${q.duration||'-'} · ${q.type}`;
   cGr=q.grade&&q.grade.includes('중1')?'중1':'중1';cPr=q.problem;
   loadProb(cGr,cPr);
-  if(q.url)loadVid();else resetVid();
-  calcTimeScore(q.durationSec||0);
+  resetVid();
+  document.getElementById('capStatus').style.display='none';
+  document.getElementById('capGrid').innerHTML='';
   updProg();
   if(q.result){restoreResult(q.result);}
-  else{showEmpty();runAI();}
+  else{showEmpty();if(q.url){loadVidAndScore();}else{runAI(false);}}
 }
 
 function loadProb(gr,n){
@@ -489,174 +506,366 @@ function loadProb(gr,n){
   document.getElementById('pans').textContent='정답: '+p.ans;
 }
 
+// ── 영상 처리 ─────────────────────────────────────────────────
 function resetVid(){
-  document.getElementById('vP').style.display='none';
-  document.getElementById('vP').src='';
-  document.getElementById('vph').style.display='flex';
-  document.getElementById('vph').innerHTML='<i class="ti ti-player-play" style="font-size:20px"></i><span>URL 입력 후 ▶ 클릭</span>';
+  const v=document.getElementById('vP');
+  v.style.display='none';v.src='';
+  const ph=document.getElementById('vph');
+  ph.style.display='flex';
+  ph.innerHTML='<i class="ti ti-player-play" style="font-size:20px"></i><span>URL 입력 후 ▶ 클릭</span>';
 }
 
 function loadVid(){
   const u=document.getElementById('vUrl').value.trim();if(!u)return;
-  const v=document.getElementById('vP');v.style.display='block';document.getElementById('vph').style.display='none';v.src=u;v.load();
+  const v=document.getElementById('vP');
+  v.style.display='block';document.getElementById('vph').style.display='none';
+  v.src=u;v.load();
 }
-function vidOk(){const v=document.getElementById('vP'),dur=v.duration;if(!dur||isNaN(dur))return;calcTimeScore(Math.round(dur));}
-function vidErr(){document.getElementById('vph').innerHTML='<i class="ti ti-alert-triangle" style="font-size:18px;color:#f59e0b"></i><span style="font-size:10px">영상 로드 실패 — ↗ 버튼으로 새 탭에서 열기</span>';document.getElementById('vph').style.display='flex';document.getElementById('vP').style.display='none';}
+
+function loadVidAndScore(){
+  const u=document.getElementById('vUrl').value.trim();if(!u){runAI(false);return;}
+  const v=document.getElementById('vP');
+  v.style.display='block';document.getElementById('vph').style.display='none';
+  showLoading('🎬 영상 로딩 중...', 2);
+  v.src=u;v.load();
+  // vidOk 이벤트에서 자동으로 runAI(true) 호출됨
+}
+
+function vidOk(){
+  const v=document.getElementById('vP'),dur=v.duration;
+  if(!dur||isNaN(dur))return;
+  // 영상 자동 채점 모드인 경우 (jQ에서 loadVidAndScore 호출 시)
+  if(document.getElementById('aiLoadBox').style.display!=='none'||
+     document.getElementById('emptyBox').style.display!=='none'){
+    // 아직 채점이 시작 안 됐거나 로딩 중이면 실제 분석 시작
+    runAI(true);
+  }
+}
+
+function vidErr(){
+  document.getElementById('vph').innerHTML='<i class="ti ti-alert-triangle" style="font-size:18px;color:#f59e0b"></i><span style="font-size:10px">영상 로드 실패 — ↗ 새탭에서 열기</span>';
+  document.getElementById('vph').style.display='flex';
+  document.getElementById('vP').style.display='none';
+}
+
 function openT(){const u=document.getElementById('vUrl').value.trim();if(u)window.open(u,'_blank');}
 
-function calcTimeScore(d){
-  const el=document.getElementById('tR');
-  if(!d){el.className='tr tna';el.textContent='-';SC.time=0;}
-  else if(d>=180&&d<=300){el.className='tr tok';el.textContent=`✅ ${fmt(d)} → 10점`;SC.time=10;}
-  else if((d>=150&&d<180)||(d>300&&d<=330)){el.className='tr twn';el.textContent=`⚠️ ${fmt(d)} → 7점`;SC.time=7;}
-  else{SC.time=d>=120&&d<=360?4:0;el.className='tr tbd';el.textContent=`❌ ${fmt(d)} → ${SC.time}점`;}
-  document.getElementById('vlTm').textContent=SC.time;
-  syncTotals();
+// ── 프레임 캡처 핵심 함수들 ───────────────────────────────────
+
+/** Promise 기반 seek */
+function seekTo(video, time, timeout=6000){
+  return new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(new Error('seek timeout')),timeout);
+    function handler(){clearTimeout(timer);video.removeEventListener('seeked',handler);resolve();}
+    video.addEventListener('seeked',handler);
+    video.currentTime=time;
+  });
 }
 
-function showEmpty(){
-  document.getElementById('aiLoadBox').style.display='none';
-  document.getElementById('resultBox').style.display='none';
-  document.getElementById('emptyBox').style.display='block';
-}
-function showLoading(txt,pct){
-  document.getElementById('emptyBox').style.display='none';
-  document.getElementById('resultBox').style.display='none';
-  document.getElementById('aiLoadBox').style.display='block';
-  document.getElementById('aiStepTxt').textContent=txt;
-  document.getElementById('aiProgBar').style.width=pct+'%';
-}
-function showResult(){
-  document.getElementById('aiLoadBox').style.display='none';
-  document.getElementById('emptyBox').style.display='none';
-  document.getElementById('resultBox').style.display='block';
+/** 프레임의 평균 밝기(0~255) 반환 — CORS 오류 시 null */
+async function getFrameBrightness(video, time){
+  try{
+    await seekTo(video, time, 4000);
+    const c=document.createElement('canvas');c.width=80;c.height=45;
+    const ctx=c.getContext('2d');ctx.drawImage(video,0,0,80,45);
+    const d=ctx.getImageData(0,0,80,45).data;
+    let sum=0;for(let i=0;i<d.length;i+=4)sum+=(d[i]+d[i+1]+d[i+2])/3;
+    return sum/(80*45);
+  }catch(e){return null;}
 }
 
-async function callAI(prompt){
+/**
+ * 공백(무음·암전) 구간을 제외한 실제 유효 재생시간 감지
+ * 뒤에서 5초씩 스캔해서 밝기>12인 마지막 프레임 위치를 찾음
+ */
+async function detectActualDuration(video){
+  const total=video.duration;
+  if(!total||isNaN(total))return 0;
+  let actualEnd=total;
+  const step=5, minScan=total*0.4;
+  for(let t=total-2; t>minScan; t-=step){
+    const b=await getFrameBrightness(video,t);
+    if(b===null){
+      // CORS — 픽셀 분석 불가, total 그대로 사용
+      return total;
+    }
+    if(b>12){actualEnd=Math.min(t+step,total);break;}
+    actualEnd=t;
+  }
+  return Math.max(actualEnd,10);
+}
+
+/** 특정 시각의 프레임을 base64 JPEG로 캡처 — CORS 실패 시 null */
+async function captureFrameAt(video, time){
+  try{
+    await seekTo(video, time, 5000);
+    const c=document.createElement('canvas');c.width=640;c.height=360;
+    const ctx=c.getContext('2d');ctx.drawImage(video,0,0,640,360);
+    const data=c.toDataURL('image/jpeg',0.75);
+    return data.split(',')[1];
+  }catch(e){return null;}
+}
+
+/** 3구간 프레임 캡처 (도입·전개·마무리) */
+async function captureThreeFrames(video, duration){
+  const pts=[duration*0.15, duration*0.5, duration*0.82];
+  const labels=['도입부','전개부','마무리'];
+  const frames=[];
+  for(let i=0;i<pts.length;i++){
+    setProgress(`📸 ${labels[i]} 캡처 중... (${i+1}/3)`, 12+i*5);
+    const f=await captureFrameAt(video, pts[i]);
+    frames.push(f);
+  }
+  return frames;
+}
+
+// ── AI API 호출 ───────────────────────────────────────────────
+
+async function callTextAI(prompt){
   const apiKey=localStorage.getItem('apiKey');
   if(!apiKey)throw new Error('NO_KEY');
-  const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content:prompt}]})});
+  const res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content:prompt}]})
+  });
   if(res.status===401){localStorage.removeItem('apiKey');throw new Error('INVALID_KEY');}
   const d=await res.json();
   const raw=(d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim();
   try{return JSON.parse((raw.match(/\{[\s\S]*\}/)||['{}'])[0]);}catch(e){return{};}
 }
 
-async function runAI(){
+async function callVisionAI(textPrompt, frames){
+  const apiKey=localStorage.getItem('apiKey');
+  if(!apiKey)throw new Error('NO_KEY');
+  const content=[];
+  const labels=['[구간1 — 도입부]','[구간2 — 전개부]','[구간3 — 마무리]'];
+  frames.forEach((f,i)=>{
+    if(f){
+      content.push({type:'text',text:labels[i]});
+      content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:f}});
+    }
+  });
+  content.push({type:'text',text:textPrompt});
+  const res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content}]})
+  });
+  if(res.status===401){localStorage.removeItem('apiKey');throw new Error('INVALID_KEY');}
+  const d=await res.json();
+  const raw=(d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim();
+  try{return JSON.parse((raw.match(/\{[\s\S]*\}/)||['{}'])[0]);}catch(e){return{};}
+}
+
+// ── 채점 메인 ─────────────────────────────────────────────────
+
+function setProgress(txt,pct){
+  document.getElementById('aiStepTxt').textContent=txt;
+  document.getElementById('aiProgBar').style.width=pct+'%';
+}
+
+async function runAI(hasVideo){
   const apiKey=localStorage.getItem('apiKey');
   if(!apiKey){showApiModal();showEmpty();return;}
-  const q=queue[curI];
+
+  showLoading('AI 심사 시작...', 0);
+  capturedFrames=[];visionUsed=false;
+
+  const q=queue[curI]||{};
   const p=PD[cGr]?.[cPr-1]||{title:'',q:'',ans:'',kp:'',terms:[]};
-  const dur=q.durationSec||0;
-  const durFmt=dur?fmt(dur):'정보없음';
+  const video=document.getElementById('vP');
 
   try{
-    // 1단계: 정량 채점 (개념·완성도)
-    showLoading('📊 정량 채점 중... (개념·완성도 50점)', 15);
-    const pr1=`당신은 수학말하기대회 전문 심사위원입니다. 아래 정보를 바탕으로 정량 채점을 수행하세요.
+    // ── Phase 1: 영상 분석 (실제 재생시간 + 프레임 캡처) ──────
+    if(hasVideo && video.readyState>=1 && video.duration){
+      setProgress('🎬 실제 재생시간 감지 중... (공백구간 제외)', 5);
+      detectedDuration=await detectActualDuration(video);
+      calcTimeScore(detectedDuration, video.duration);
+
+      setProgress('📸 판서 분석용 영상 캡처 중...', 10);
+      capturedFrames=await captureThreeFrames(video, detectedDuration);
+      const successCount=capturedFrames.filter(Boolean).length;
+      visionUsed=successCount>0;
+
+      // 캡처 상태 표시
+      showCaptureStatus(visionUsed, capturedFrames, video.duration, detectedDuration);
+
+      // 결과 패널에 이미지 표시
+      if(visionUsed){
+        document.getElementById('visionCaptures').style.display='block';
+        document.getElementById('delivBadge').textContent='Vision AI 영상 직접 분석';
+        document.getElementById('delivBadge').style.background='#EAF3DE';
+        document.getElementById('delivBadge').style.color='#3B6D11';
+        const labels=['도입부','전개부','마무리'];
+        document.getElementById('visionCapGrid').innerHTML=capturedFrames.map((f,i)=>
+          f?`<div><img class="cap-img" src="data:image/jpeg;base64,${f}"><div class="cap-lbl">${labels[i]}</div></div>`
+           :`<div><div class="cap-img" style="display:flex;align-items:center;justify-content:center;color:#777;font-size:9px">캡처불가</div><div class="cap-lbl">${labels[i]}</div></div>`
+        ).join('');
+      }else{
+        document.getElementById('visionCaptures').style.display='none';
+        document.getElementById('delivBadge').textContent='텍스트 추정 (CORS 제한)';
+        document.getElementById('delivBadge').style.background='#FEF9C3';
+        document.getElementById('delivBadge').style.color='#92400E';
+      }
+    }else{
+      // 영상 없음 — 엑셀 시간 사용
+      const ds=q.durationSec||0;
+      detectedDuration=ds;
+      calcTimeScore(ds, ds);
+      document.getElementById('durInfo').textContent=`실제 재생시간: 영상 미로드 (엑셀 값 ${q.duration||'-'} 사용)`;
+    }
+
+    // ── Phase 2: 정량 채점 (개념·완성도) ─────────────────────
+    setProgress('📊 개념·완성도 AI 채점 중...', 35);
+    const durFmt=detectedDuration?fmt(detectedDuration):(q.duration||'정보없음');
+    const pr1=`당신은 수학말하기대회 전문 심사위원입니다. 정량 채점을 수행하세요.
 
 [학생 정보]
 학년: ${cGr} / 문항: ${p.title}
 문제: ${p.q}
 정답: ${p.ans}
 핵심포인트: ${p.kp}
-필수용어 목록(${p.terms.length}개): ${p.terms.join(', ')}
-발표시간: ${durFmt}
+필수용어(${p.terms.length}개): ${p.terms.join(', ')}
+실제 발표시간: ${durFmt}
 팀명: ${q.teamName} / 캠퍼스: ${q.campus||''}
 
 [채점 기준]
-개념선정(0~10): 해당 학년 교육과정에 적합하고 명확한 개념을 선정했는지. 10=매우 적절, 7~9=대체로 적절, 4~6=보통, 0~3=부적절
-용어정리(0~10): 필수용어 목록 기준 누락 추정 개수를 판단. 발표 제목과 문항에서 사용될 핵심 용어 기반으로 추정. 10=모두 포함, 8=1개 누락, 6=2개 누락, 4=3개 누락, 2=4개 누락, 0=5개 이상
-정확성(0~10): 수학적 내용의 정확성. 10=완전 정확, 7~9=대체로 정확, 4~6=일부 오류, 0~3=심각한 오류
-논리성(0~10): 설명의 논리적 구조와 흐름. 10=매우 논리적, 7~9=대체로 논리적, 4~6=보통, 0~3=비논리적
+개념선정(0~10): 중1 교육과정 적합성 및 개념 명확성
+용어정리(0~10): 필수용어 포함 추정 (누락 1개당 -2점)
+정확성(0~10): 수학적 내용 정확성
+논리성(0~10): 설명 흐름의 논리성
 
 JSON만 응답:
-{"개념선정":숫자,"용어정리":숫자,"정확성":숫자,"논리성":숫자,"개념사유":"2~3문장으로 개념선정과 용어정리 채점 근거","완성도사유":"2~3문장으로 정확성과 논리성 채점 근거"}`;
+{"개념선정":숫자,"용어정리":숫자,"정확성":숫자,"논리성":숫자,"개념사유":"2~3문장","완성도사유":"2~3문장"}`;
 
-    const r1=await callAI(pr1);
-    SC.concept=clamp(r1.개념선정??8);
-    SC.term=clamp(r1.용어정리??8);
-    SC.acc=clamp(r1.정확성??8);
-    SC.logic=clamp(r1.논리성??7);
-    aiReasons.r1=r1.개념사유||'';
-    aiReasons.r2=r1.완성도사유||'';
+    const r1=await callTextAI(pr1);
+    SC.concept=clamp(r1.개념선정??8);SC.term=clamp(r1.용어정리??8);
+    SC.acc=clamp(r1.정확성??8);SC.logic=clamp(r1.논리성??7);
+    aiReasons.r1=r1.개념사유||'';aiReasons.r2=r1.완성도사유||'';
 
-    // 2단계: 전달력
-    showLoading('✍️ 전달력 채점 중... (판서·말하기 20점)', 45);
-    const pr2=`당신은 수학말하기대회 전문 심사위원입니다. 학생의 발표 전달력을 채점하세요.
+    // ── Phase 3: 전달력 (Vision 또는 텍스트) ─────────────────
+    setProgress(visionUsed?'📸 판서·발표 영상 직접 분석 중...':'✍️ 전달력 AI 추정 채점 중...', 60);
 
-[학생 정보]
-학년: ${cGr} / 문항: ${p.title} / 발표시간: ${durFmt}
-팀명: ${q.teamName} / 캠퍼스: ${q.campus||''}
+    if(visionUsed && capturedFrames.some(Boolean)){
+      const pr2=`당신은 수학말하기대회 전문 심사위원입니다. 위에 첨부된 3구간 영상 캡처 이미지를 직접 분석하여 전달력을 채점하세요.
 
-[채점 기준]
-판서(0~10): 판서의 명확성·가독성·색상 활용·핵심 강조·자연스러운 판서 진행
-  10=매우 우수, 8~9=우수, 6~7=보통, 4~5=미흡, 0~3=불량
-말하기(0~10): 대본 의존도·속도·크기·발음·손동작·자신감·카메라(청중) 시선
-  10=매우 우수, 8~9=우수, 6~7=보통, 4~5=미흡, 0~3=불량
+[채점 기준 — 실제 이미지 기반으로 판단]
+판서(0~10):
+- 화이트보드/칠판 글씨의 명확성과 가독성
+- 색상 활용 및 핵심어 강조 여부
+- 판서 정리 수준과 깔끔함
+- 10=매우 우수, 8~9=우수, 6~7=보통, 4~5=미흡, 0~3=불량
 
-중학교 1학년 수학 발표 대회 참가자 평균 수준을 고려하여 현실적으로 채점하세요.
+말하기(0~10):
+- 화면에 보이는 발표자의 자신감과 자세
+- 카메라(시청자) 방향 응시 여부
+- 자연스러운 제스처와 표정
+- 대본/판서 의존도 (등을 돌리거나 판서만 보는 경우 감점)
+- 10=매우 우수, 8~9=우수, 6~7=보통, 4~5=미흡, 0~3=불량
 
-JSON만 응답:
-{"판서":숫자,"말하기":숫자,"전달력사유":"판서와 말하기에 대한 2~3문장 채점 근거"}`;
-
-    const r2=await callAI(pr2);
-    SC.board=clamp(r2.판서??7);
-    SC.speak=clamp(r2.말하기??7);
-    aiReasons.r3=r2.전달력사유||'';
-
-    // 3단계: AI 창의성
-    showLoading('🤖 AI 창의성 채점 중... (30점)', 72);
-    const pr3=`당신은 수학말하기대회 AI 심사위원단입니다. 세 가지 페르소나로 창의성을 채점하세요.
-
-[학생 정보]
+이미지에서 보이지 않는 요소(음성 크기·발음 등)는 화면 분위기로 추정하세요.
 학년: ${cGr} / 문항: ${p.title}
-문제: ${p.q}
+
+JSON만 응답:
+{"판서":숫자,"말하기":숫자,"전달력사유":"이미지에서 관찰한 내용 기반 2~3문장 채점 근거"}`;
+      const r2=await callVisionAI(pr2, capturedFrames);
+      SC.board=clamp(r2.판서??7);SC.speak=clamp(r2.말하기??7);
+      aiReasons.r3=r2.전달력사유||'';
+    }else{
+      const pr2=`당신은 수학말하기대회 심사위원입니다. (영상 캡처 불가로 텍스트 기반 추정)
+학년: ${cGr} / 문항: ${p.title} / 발표시간: ${durFmt}
+
+판서(0~10)와 말하기(0~10)를 중1 평균 수준 기준으로 합리적으로 채점하세요.
+JSON만 응답: {"판서":숫자,"말하기":숫자,"전달력사유":"텍스트 추정 기반 2문장 채점 사유"}`;
+      const r2=await callTextAI(pr2);
+      SC.board=clamp(r2.판서??6);SC.speak=clamp(r2.말하기??6);
+      aiReasons.r3=(r2.전달력사유||'')+(visionUsed?'':'\n[주의: 영상 캡처 불가로 텍스트 기반 추정 채점입니다]');
+    }
+
+    // ── Phase 4: 창의성 ───────────────────────────────────────
+    setProgress('🤖 AI 창의성 페르소나 채점 중...', 80);
+    const pr3=`당신은 수학말하기대회 AI 심사위원단(3인 페르소나)입니다.
+학년: ${cGr} / 문항: ${p.title} / 문제: ${p.q}
 발표시간: ${durFmt} / 팀명: ${q.teamName}
 
-[페르소나별 채점]
-① 수학 교사 (예시 점수 0~10): 학생이 사용했을 예시의 수학적 적절성과 참신함
-  - 실생활 연결, 구체적 예시, 개념 이해 심화 여부
-  - 10=매우 참신하고 적절, 7~9=참신함, 5~6=보통, 0~4=진부하거나 부적절
-
-② 또래 학생 — 흥미유발(0~10): 같은 학년이 흥미를 느낄 만한 발표였는지
-③ 또래 학생 — 또래이해(0~10): 같은 학년이 이해하기 쉬운 설명이었는지
-  - 각각 10=매우 우수, 7~9=우수, 5~6=보통, 0~4=미흡
+① 수학교사 — 예시(0~10): 예시의 수학적 적절성·참신함. 실생활 연결, 개념 심화 여부.
+② 또래학생 — 흥미유발(0~10): 같은 학년이 흥미를 느낄 발표였는지.
+③ 또래학생 — 또래이해(0~10): 같은 학년이 이해하기 쉬운 설명이었는지.
 
 JSON만 응답:
-{"예시":숫자,"흥미유발":숫자,"또래이해":숫자,"수학교사피드백":"2~3문장","또래학생피드백":"흥미·이해 관련 2~3문장","발표코치피드백":"창의적 표현과 발표 스타일 종합 2~3문장"}`;
+{"예시":숫자,"흥미유발":숫자,"또래이해":숫자,"수학교사피드백":"2~3문장","또래학생피드백":"2~3문장","발표코치피드백":"창의적 표현과 발표 스타일 2~3문장"}`;
+    const r3=await callTextAI(pr3);
+    SC.ex=clamp(r3.예시??7);SC.eng=clamp(r3.흥미유발??7);SC.peer=clamp(r3.또래이해??7);
+    aiReasons.fb1=r3.수학교사피드백||'';aiReasons.fb2=r3.또래학생피드백||'';aiReasons.fb3=r3.발표코치피드백||'';
 
-    const r3=await callAI(pr3);
-    SC.ex=clamp(r3.예시??7);
-    SC.eng=clamp(r3.흥미유발??7);
-    SC.peer=clamp(r3.또래이해??7);
-    aiReasons.fb1=r3.수학교사피드백||'';
-    aiReasons.fb2=r3.또래학생피드백||'';
-    aiReasons.fb3=r3.발표코치피드백||'';
-
-    showLoading('✅ 채점 완료!', 100);
+    setProgress('✅ 채점 완료!',100);
     setTimeout(()=>{applyScoresToUI();showResult();},400);
 
   }catch(err){
-    if(err.message==='INVALID_KEY'){alert('API 키가 유효하지 않습니다. 다시 입력해주세요.');showApiModal();}
+    if(err.message==='INVALID_KEY'){alert('API 키가 유효하지 않습니다.');showApiModal();}
     else if(err.message==='NO_KEY'){showApiModal();}
-    else{alert('AI 채점 중 오류가 발생했습니다: '+err.message);}
+    else{alert('AI 채점 오류: '+err.message);}
     showEmpty();
   }
 }
 
-function clamp(v,min=0,max=10){return Math.min(max,Math.max(min,Math.round(Number(v)||0)));}
+// ── 시간 채점 (실제 감지 시간 기반) ─────────────────────────
+function calcTimeScore(actualSec, totalSec){
+  const d=Math.round(actualSec)||0;
+  const el=document.getElementById('tR');
+  const info=document.getElementById('durInfo');
+  if(!d){el.className='tr tna';el.textContent='측정 실패';SC.time=0;}
+  else if(d>=180&&d<=300){el.className='tr tok';el.textContent=`✅ ${fmt(d)} → 10점`;SC.time=10;}
+  else if((d>=150&&d<180)||(d>300&&d<=330)){el.className='tr twn';el.textContent=`⚠️ ${fmt(d)} → 7점`;SC.time=7;}
+  else{SC.time=d>=120&&d<=360?4:0;el.className='tr tbd';el.textContent=`❌ ${fmt(d)} → ${SC.time}점`;}
+  document.getElementById('vlTm').textContent=SC.time;
+  const diffTxt=(totalSec&&totalSec!==actualSec)?` (전체 ${fmt(totalSec)} 중 유효 ${fmt(actualSec)})`:fmt(d);
+  if(info)info.textContent=`실제 유효 재생시간: ${diffTxt}`;
+  syncTotals();
+}
+
+function showCaptureStatus(success, frames, total, actual){
+  const box=document.getElementById('capStatus');
+  const txt=document.getElementById('capStatusTxt');
+  const grid=document.getElementById('capGrid');
+  box.style.display='block';
+  if(success){
+    const n=frames.filter(Boolean).length;
+    txt.innerHTML=`<span style="color:var(--cg)">✅ Vision 캡처 성공 (${n}/3구간)</span> — 전체 ${fmt(total)} / 유효 ${fmt(actual)}`;
+    const labels=['도입','전개','마무리'];
+    grid.innerHTML=frames.map((f,i)=>
+      f?`<div><img class="cap-img" src="data:image/jpeg;base64,${f}"><div class="cap-lbl">${labels[i]}</div></div>`
+       :`<div><div class="cap-img" style="display:flex;align-items:center;justify-content:center;color:#777;font-size:9px">CORS</div><div class="cap-lbl">${labels[i]}</div></div>`
+    ).join('');
+  }else{
+    txt.innerHTML=`<span style="color:#92400E">⚠️ 캡처 불가 (CORS 제한)</span> — 텍스트 기반 전달력 채점`;
+    grid.innerHTML='';
+  }
+}
+
+function showLoading(txt,pct){
+  document.getElementById('emptyBox').style.display='none';
+  document.getElementById('resultBox').style.display='none';
+  document.getElementById('aiLoadBox').style.display='block';
+  setProgress(txt,pct);
+}
+function showResult(){
+  document.getElementById('aiLoadBox').style.display='none';
+  document.getElementById('emptyBox').style.display='none';
+  document.getElementById('resultBox').style.display='block';
+}
+function showEmpty(){
+  document.getElementById('aiLoadBox').style.display='none';
+  document.getElementById('resultBox').style.display='none';
+  document.getElementById('emptyBox').style.display='block';
+}
+
+function clamp(v,mn=0,mx=10){return Math.min(mx,Math.max(mn,Math.round(Number(v)||0)));}
 
 function applyScoresToUI(){
-  document.getElementById('slC').value=SC.concept;document.getElementById('vlC').textContent=SC.concept;
-  document.getElementById('slT').value=SC.term;document.getElementById('vlT').textContent=SC.term;
-  document.getElementById('slAc').value=SC.acc;document.getElementById('vlAc').textContent=SC.acc;
-  document.getElementById('slLg').value=SC.logic;document.getElementById('vlLg').textContent=SC.logic;
-  document.getElementById('slBd').value=SC.board;document.getElementById('vlBd').textContent=SC.board;
-  document.getElementById('slSp').value=SC.speak;document.getElementById('vlSp').textContent=SC.speak;
-  document.getElementById('slEx').value=SC.ex;document.getElementById('vlEx').textContent=SC.ex;
-  document.getElementById('slEn').value=SC.eng;document.getElementById('vlEn').textContent=SC.eng;
-  document.getElementById('slPe').value=SC.peer;document.getElementById('vlPe').textContent=SC.peer;
+  const map=[['slC','vlC','concept'],['slT','vlT','term'],['slAc','vlAc','acc'],['slLg','vlLg','logic'],['slBd','vlBd','board'],['slSp','vlSp','speak'],['slEx','vlEx','ex'],['slEn','vlEn','eng'],['slPe','vlPe','peer']];
+  map.forEach(([sl,vl,key])=>{document.getElementById(sl).value=SC[key];document.getElementById(vl).textContent=SC[key];});
   document.getElementById('r1').textContent=aiReasons.r1;
   document.getElementById('r2').textContent=aiReasons.r2;
   document.getElementById('r3').textContent=aiReasons.r3;
@@ -668,8 +877,8 @@ function applyScoresToUI(){
 
 function manualSync(key,val){
   SC[key]=parseInt(val)||0;
-  const map={concept:'vlC',term:'vlT',acc:'vlAc',logic:'vlLg',board:'vlBd',speak:'vlSp',ex:'vlEx',eng:'vlEn',peer:'vlPe'};
-  if(map[key])document.getElementById(map[key]).textContent=SC[key];
+  const vl={concept:'vlC',term:'vlT',acc:'vlAc',logic:'vlLg',board:'vlBd',speak:'vlSp',ex:'vlEx',eng:'vlEn',peer:'vlPe'};
+  if(vl[key])document.getElementById(vl[key]).textContent=SC[key];
   syncTotals();
 }
 
@@ -691,29 +900,26 @@ function syncTotals(){
   document.getElementById('fs4').innerHTML=`${s4}<span style="font-size:11px;color:var(--cs)">/30</span>`;
   const grd=tot>=90?'최우수':tot>=80?'우수':tot>=70?'장려':'참가';
   const clr=tot>=90?'var(--cg)':tot>=70?'var(--ci)':'var(--cs)';
-  document.getElementById('fsTot').textContent=tot;
-  document.getElementById('fsTot').style.color=clr;
-  document.getElementById('fsGrd').textContent=grd;
-  document.getElementById('fsGrd').style.color=clr;
+  document.getElementById('fsTot').textContent=tot;document.getElementById('fsTot').style.color=clr;
+  document.getElementById('fsGrd').textContent=grd;document.getElementById('fsGrd').style.color=clr;
 }
 
 function restoreResult(res){
   if(!res)return;
-  Object.assign(SC,{
-    concept:res.scores?.개념선정??10,term:res.scores?.용어정리??10,
-    time:res.scores?.시간준수??0,acc:res.scores?.정확성??10,logic:res.scores?.논리성??0,
-    board:res.scores?.판서??0,speak:res.scores?.말하기??0,
-    ex:res.scores?.예시??0,eng:res.scores?.흥미유발??0,peer:res.scores?.또래이해??0
-  });
+  Object.assign(SC,{concept:res.scores?.개념선정??10,term:res.scores?.용어정리??10,time:res.scores?.시간준수??0,acc:res.scores?.정확성??10,logic:res.scores?.논리성??0,board:res.scores?.판서??0,speak:res.scores?.말하기??0,ex:res.scores?.예시??0,eng:res.scores?.흥미유발??0,peer:res.scores?.또래이해??0});
   aiReasons={r1:res.reasons?.개념||'',r2:res.reasons?.완성도||'',r3:res.reasons?.전달력||'',fb1:res.reasons?.fb1||'',fb2:res.reasons?.fb2||'',fb3:res.reasons?.fb3||''};
+  if(res.durInfo)document.getElementById('durInfo').textContent=res.durInfo;
   applyScoresToUI();showResult();
 }
 
 function rerunAI(){
   Object.assign(SC,{concept:0,term:0,time:0,acc:0,logic:0,board:0,speak:0,ex:0,eng:0,peer:0});
   aiReasons={r1:'',r2:'',r3:'',fb1:'',fb2:'',fb3:''};
-  const q=queue[curI];if(q)calcTimeScore(q.durationSec||0);
-  runAI();
+  capturedFrames=[];visionUsed=false;
+  document.getElementById('capStatus').style.display='none';
+  document.getElementById('visionCaptures').style.display='none';
+  const video=document.getElementById('vP');
+  runAI(video.readyState>=1&&!!video.duration);
 }
 
 function saveNext(){
@@ -724,7 +930,8 @@ function saveNext(){
       scores:{개념선정:SC.concept,용어정리:SC.term,시간준수:SC.time,정확성:SC.acc,논리성:SC.logic,판서:SC.board,말하기:SC.speak,예시:SC.ex,흥미유발:SC.eng,또래이해:SC.peer},
       totals:{개념적절성:s1,설명완성도:s2,전달력:s3,창의성:s4,총점:s1+s2+s3+s4},
       reasons:{개념:document.getElementById('r1').textContent,완성도:document.getElementById('r2').textContent,전달력:document.getElementById('r3').textContent,fb1:document.getElementById('fb1').textContent,fb2:document.getElementById('fb2').textContent,fb3:document.getElementById('fb3').textContent},
-      ts:new Date().toISOString()
+      durInfo:document.getElementById('durInfo').textContent,
+      visionUsed,ts:new Date().toISOString()
     };
   }
   svTmp();updProg();
@@ -735,12 +942,7 @@ function saveNext(){
 }
 
 function prevR(){if(curI>0)jQ(curI-1);}
-function updProg(){
-  const done=queue.filter(q=>q.status2==='done').length,tot=queue.length;
-  document.getElementById('progF').style.width=tot>0?`${done/tot*100}%`:'0%';
-  document.getElementById('progT').textContent=`${curI+1}/${tot}`;
-}
-
+function updProg(){const done=queue.filter(q=>q.status2==='done').length,tot=queue.length;document.getElementById('progF').style.width=tot>0?`${done/tot*100}%`:'0%';document.getElementById('progT').textContent=`${curI+1}/${tot}`;}
 function svTmp(){try{localStorage.setItem('mathJudgeData',JSON.stringify({queue,curI,ts:Date.now()}));}catch(e){}}
 
 function doXL(){
@@ -749,23 +951,24 @@ function doXL(){
     const r=q.result;
     const base={'접수일':q.date,'브랜드':q.brand,'캠퍼스':q.campus,'학년':q.grade,'팀명':q.teamName,'팀원':q.members,'참가유형':q.type,'발표문제':q.problem+'번','영상주소':q.url,'영상시간':q.duration,'좋아요수':q.likes,'접수상태':q.status};
     if(!r)return{...base,'채점상태':'미완료'};
-    return{...base,'채점상태':'완료',
+    return{...base,'채점상태':'완료','Vision채점여부':r.visionUsed?'O(영상캡처)':'X(텍스트추정)',
       '개념선정':r.scores.개념선정,'용어정리':r.scores.용어정리,'개념적절성계':r.totals.개념적절성,'개념채점사유':r.reasons.개념,
       '시간준수':r.scores.시간준수,'정확성':r.scores.정확성,'논리성':r.scores.논리성,'설명완성도계':r.totals.설명완성도,'완성도채점사유':r.reasons.완성도,
       '판서':r.scores.판서,'말하기':r.scores.말하기,'전달력계':r.totals.전달력,'전달력채점사유':r.reasons.전달력,
       '예시':r.scores.예시,'흥미유발':r.scores.흥미유발,'또래이해':r.scores.또래이해,'창의성계':r.totals.창의성,
       'AI수학교사피드백':r.reasons.fb1||'','AI또래학생피드백':r.reasons.fb2||'','AI발표코치피드백':r.reasons.fb3||'',
-      '총점':r.totals.총점,'등급':r.totals.총점>=90?'최우수':r.totals.총점>=80?'우수':r.totals.총점>=70?'장려':'참가','심사일시':r.ts
+      '실제재생시간':r.durInfo||'','총점':r.totals.총점,
+      '등급':r.totals.총점>=90?'최우수':r.totals.총점>=80?'우수':r.totals.총점>=70?'장려':'참가','심사일시':r.ts
     };
   });
   const ws=XLSX.utils.json_to_sheet(rows);
-  ws['!cols']=Object.keys(rows[0]||{}).map(k=>({wch:k.includes('피드백')||k.includes('사유')?40:k==='영상주소'?35:12}));
+  ws['!cols']=Object.keys(rows[0]||{}).map(k=>({wch:k.includes('피드백')||k.includes('사유')?40:k==='영상주소'?35:14}));
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'심사결과');
   const gm={최우수:0,우수:0,장려:0,참가:0};
   queue.forEach(q=>{if(q.result){const g=q.result.totals.총점>=90?'최우수':q.result.totals.총점>=80?'우수':q.result.totals.총점>=70?'장려':'참가';gm[g]++;}});
   const dq=queue.filter(q=>q.result);
   const sm=[{'항목':'전체 접수','값':queue.length},{'항목':'채점 완료','값':done.length},{'항목':'미완료','값':queue.length-done.length},{'항목':'','값':''},{'항목':'최우수 (90↑)','값':gm.최우수},{'항목':'우수 (80~89)','값':gm.우수},{'항목':'장려 (70~79)','값':gm.장려},{'항목':'참가 (70↓)','값':gm.참가}];
-  if(dq.length)sm.push({'항목':'','값':''},{'항목':'평균 총점','값':Math.round(dq.reduce((a,q)=>a+q.result.totals.총점,0)/dq.length)});
+  if(dq.length)sm.push({'항목':'','값':''},{'항목':'평균 총점','값':Math.round(dq.reduce((a,q)=>a+q.result.totals.총점,0)/dq.length)},{'항목':'Vision채점 건수','값':dq.filter(q=>q.result.visionUsed).length});
   const ws2=XLSX.utils.json_to_sheet(sm);ws2['!cols']=[{wch:20},{wch:10}];XLSX.utils.book_append_sheet(wb,ws2,'집계요약');
   const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
   const dt=new Date().toLocaleDateString('ko').replace(/\. /g,'').replace('.','');
