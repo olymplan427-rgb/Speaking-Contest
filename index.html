@@ -217,6 +217,10 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
     <div style="font-size:10px;color:var(--cs);margin-top:3px;line-height:1.5" id="pq">-</div>
     <div style="font-size:10px;font-weight:500;margin-top:4px;padding:3px 6px;background:var(--bg);border-radius:4px;color:var(--cg)" id="pans">정답: -</div>
   </div>
+  <div style="background:var(--bp);border:.5px solid var(--bt);border-radius:7px;padding:7px 10px;font-size:10px">
+    <div id="srvSt"><span style="color:var(--cs)">⚪ Vision서버 확인 중...</span></div>
+    <button class="btn bsc" style="font-size:9px;padding:2px 7px;margin-top:5px;width:100%" onclick="checkLocalServer()">🔄 서버 상태 재확인</button>
+  </div>
 </div>
 
 <!-- Right -->
@@ -424,6 +428,34 @@ let capturedFrames=[]; // base64 strings (null = CORS failed)
 let detectedDuration=0;
 let visionUsed=false;
 let pendingAutoScore=false; // jQ에서 세팅, vidOk에서 소비
+let localServerOk=false; // 로컬 ffmpeg 서버 연결 여부
+
+// ── 로컬 서버 상태 체크 ───────────────────────────────────────
+async function checkLocalServer(){
+  try{
+    const r=await fetch('http://localhost:8080/health',{signal:AbortSignal.timeout(2000)});
+    const d=await r.json();
+    localServerOk=d.status==='ok';
+  }catch(e){localServerOk=false;}
+  const el=document.getElementById('srvSt');
+  if(el)el.innerHTML=localServerOk
+    ?'<span style="color:var(--cg)">🟢 Vision서버 연결됨</span>'
+    :'<span style="color:var(--cs)">⚪ Vision서버 꺼짐 — <code style="font-size:9px">python server.py</code></span>';
+}
+
+// ── 로컬 서버로 프레임 추출 ───────────────────────────────────
+async function extractFramesFromServer(url, durationSec){
+  try{
+    const r=await fetch('http://localhost:8080/extract-frames',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url,duration_sec:durationSec}),
+      signal:AbortSignal.timeout(240000) // 4분 타임아웃
+    });
+    if(!r.ok)return null;
+    return await r.json();
+  }catch(e){return null;}
+}
 
 // ── 뷰 전환 ───────────────────────────────────────────────────
 function showView(id){
@@ -684,54 +716,67 @@ async function runAI(hasVideo){
   const video=document.getElementById('vP');
 
   try{
-    // ── Phase 1: 영상 분석 (실제 재생시간 + 프레임 캡처) ──────
-    if(hasVideo && video.readyState>=1 && video.duration){
-      setProgress('🎬 실제 재생시간 감지 중... (공백구간 제외)', 5);
+    // ── Phase 1: 영상 분석 ────────────────────────────────────
+    const url=q.url||'';
 
-      // 전체 영상 분석에 15초 타임아웃 — 초과 시 엑셀 시간으로 폴백
-      const videoAnalysis = async ()=>{
-        detectedDuration=await detectActualDuration(video);
-        calcTimeScore(detectedDuration, video.duration);
-        setProgress('📸 판서 분석용 영상 캡처 중...', 10);
-        capturedFrames=await captureThreeFrames(video, detectedDuration);
-      };
-      const timeout15s = new Promise(r=>setTimeout(r,15000));
-      await Promise.race([videoAnalysis(), timeout15s]);
+    if(localServerOk && url){
+      // ▶ 경로 A: 로컬 ffmpeg 서버 (고품질 Vision)
+      setProgress('⬇️ 영상 다운로드 중... (ffmpeg 서버)', 5);
+      const srv=await extractFramesFromServer(url, q.durationSec||0);
 
-      // 타임아웃으로 분석 미완료 시 엑셀 시간 사용
-      if(!detectedDuration){
+      if(srv && srv.success_count>0){
+        capturedFrames=srv.frames;
+        detectedDuration=srv.effective_duration||srv.actual_duration||q.durationSec||0;
+        visionUsed=true;
+        calcTimeScore(detectedDuration, srv.actual_duration||detectedDuration);
+        showCaptureStatus(true, capturedFrames, srv.actual_duration, detectedDuration);
+        document.getElementById('visionCaptures').style.display='block';
+        document.getElementById('delivBadge').textContent='🟢 ffmpeg Vision 직접 분석';
+        document.getElementById('delivBadge').style.background='#DCFCE7';
+        document.getElementById('delivBadge').style.color='#14532D';
+        document.getElementById('visionCapGrid').innerHTML=capturedFrames.map((f,i)=>
+          f?`<div><img class="cap-img" src="data:image/jpeg;base64,${f}"><div class="cap-lbl">${(srv.labels||['도입부','전개부','마무리'])[i]}</div></div>`
+           :`<div><div class="cap-img" style="display:flex;align-items:center;justify-content:center;color:#777;font-size:9px">추출실패</div><div class="cap-lbl">${i+1}구간</div></div>`
+        ).join('');
+      }else{
+        // 서버 오류 → 엑셀 시간 폴백
         detectedDuration=q.durationSec||0;
         calcTimeScore(detectedDuration, detectedDuration);
+        document.getElementById('durInfo').textContent=`서버 다운로드 실패 — 엑셀 값 ${q.duration||'-'} 사용`;
       }
 
-      const successCount=capturedFrames.filter(Boolean).length;
-      visionUsed=successCount>0;
-
-      // 캡처 상태 표시
+    }else if(hasVideo && video.readyState>=1 && video.duration){
+      // ▶ 경로 B: 브라우저 canvas 캡처 (CORS 허용 시만 성공)
+      setProgress('🎬 실제 재생시간 감지 중...', 5);
+      const videoAnalysis=async()=>{
+        detectedDuration=await detectActualDuration(video);
+        calcTimeScore(detectedDuration, video.duration);
+        setProgress('📸 캡처 중...', 10);
+        capturedFrames=await captureThreeFrames(video, detectedDuration);
+      };
+      await Promise.race([videoAnalysis(), new Promise(r=>setTimeout(r,15000))]);
+      if(!detectedDuration){detectedDuration=q.durationSec||0;calcTimeScore(detectedDuration,detectedDuration);}
+      visionUsed=capturedFrames.filter(Boolean).length>0;
       showCaptureStatus(visionUsed, capturedFrames, video.duration, detectedDuration);
-
-      // 결과 패널에 이미지 표시
       if(visionUsed){
         document.getElementById('visionCaptures').style.display='block';
-        document.getElementById('delivBadge').textContent='Vision AI 영상 직접 분석';
+        document.getElementById('delivBadge').textContent='Vision AI 영상 분석';
         document.getElementById('delivBadge').style.background='#EAF3DE';
         document.getElementById('delivBadge').style.color='#3B6D11';
-        const labels=['도입부','전개부','마무리'];
         document.getElementById('visionCapGrid').innerHTML=capturedFrames.map((f,i)=>
-          f?`<div><img class="cap-img" src="data:image/jpeg;base64,${f}"><div class="cap-lbl">${labels[i]}</div></div>`
-           :`<div><div class="cap-img" style="display:flex;align-items:center;justify-content:center;color:#777;font-size:9px">캡처불가</div><div class="cap-lbl">${labels[i]}</div></div>`
+          f?`<div><img class="cap-img" src="data:image/jpeg;base64,${f}"><div class="cap-lbl">${['도입부','전개부','마무리'][i]}</div></div>`
+           :`<div><div class="cap-img" style="display:flex;align-items:center;justify-content:center;color:#777;font-size:9px">CORS</div><div class="cap-lbl">${['도입부','전개부','마무리'][i]}</div></div>`
         ).join('');
       }else{
         document.getElementById('visionCaptures').style.display='none';
-        document.getElementById('delivBadge').textContent='텍스트 추정 (CORS 제한)';
+        document.getElementById('delivBadge').textContent='텍스트 추정 (CORS 제한 — server.py 실행 필요)';
         document.getElementById('delivBadge').style.background='#FEF9C3';
         document.getElementById('delivBadge').style.color='#92400E';
       }
     }else{
-      // 영상 없음 — 엑셀 시간 사용
-      const ds=q.durationSec||0;
-      detectedDuration=ds;
-      calcTimeScore(ds, ds);
+      // ▶ 경로 C: 영상 없음 — 엑셀 시간만 사용
+      detectedDuration=q.durationSec||0;
+      calcTimeScore(detectedDuration, detectedDuration);
       document.getElementById('durInfo').textContent=`실제 재생시간: 영상 미로드 (엑셀 값 ${q.duration||'-'} 사용)`;
     }
 
@@ -1002,6 +1047,8 @@ uz.addEventListener('drop',e=>{e.preventDefault();uz.classList.remove('drag');co
 
 window.addEventListener('load',()=>{
   updApiSt();
+  checkLocalServer();
+  setInterval(checkLocalServer, 10000); // 10초마다 서버 상태 갱신
   try{
     const raw=localStorage.getItem('mathJudgeData');if(!raw)return;
     const d=JSON.parse(raw);if(!d.queue?.length)return;
