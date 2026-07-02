@@ -115,6 +115,20 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
 .tok{background:var(--bg);color:var(--cg)}.twn{background:#FEF9C3;color:#92400E}.tbd{background:#FEF2F2;color:#991B1B}.tna{background:var(--bs);color:var(--cs)}
 @media(prefers-color-scheme:dark){.twn{background:#412402;color:#FAC775}.tbd{background:#3B0D0D;color:#FCA5A5}}
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--b2);border-radius:4px}
+/* 음성전사·판서텍스트 패널 */
+.tpanel{border:.5px solid var(--bt);border-radius:8px;overflow:hidden;margin-bottom:10px}
+.tpanel-h{display:flex;align-items:center;gap:7px;padding:8px 12px;font-size:11px;font-weight:500;cursor:pointer;background:var(--bs);border-bottom:.5px solid var(--bt);user-select:none}
+.tpanel-h:hover{background:var(--bt)}
+.tpanel-b{padding:10px 12px;display:none;flex-direction:column;gap:6px}
+.tpanel-b.open{display:flex}
+.tseg{font-size:11px;line-height:1.7;white-space:pre-wrap;color:var(--cp)}
+.tseg-line{display:flex;gap:8px;padding:2px 0}
+.tseg-time{color:var(--ci);font-size:10px;font-weight:500;min-width:36px;flex-shrink:0;padding-top:1px}
+.tseg-text{flex:1}
+.tboard-frame{margin-bottom:8px}
+.tboard-lbl{font-size:10px;font-weight:500;color:var(--ci);margin-bottom:3px}
+.tboard-text{background:var(--bs);border-radius:5px;padding:6px 9px;font-size:11px;line-height:1.7;color:var(--cp);border:.5px solid var(--bt);white-space:pre-wrap}
+.tstat{font-size:10px;color:var(--cs);padding:4px 7px;background:var(--bs);border-radius:5px;border:.5px solid var(--bt)}
 </style>
 </head>
 <body>
@@ -368,6 +382,30 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
           <div class="reason-box" id="fb2"></div>
           <div style="font-size:10px;color:var(--cs);font-weight:500;margin-top:4px">🎤 발표 코치 피드백</div>
           <div class="reason-box" id="fb3"></div>
+        </div>
+      </div>
+
+      <!-- 음성전사 & 판서텍스트 패널 -->
+      <div class="tpanel" id="transcriptPanel" style="display:none">
+        <div class="tpanel-h" onclick="togglePanel('transcriptPanel')">
+          <span>🎙️ 음성 전사</span>
+          <span id="transcriptBadge" class="badge" style="background:#EFF6FF;color:var(--ci)">로딩 중...</span>
+          <span style="margin-left:auto;font-size:10px;color:var(--cs)" id="transcriptToggleTxt">▼ 펼치기</span>
+        </div>
+        <div class="tpanel-b" id="transcriptBody">
+          <div class="tstat" id="transcriptStat"></div>
+          <div id="transcriptSegs" class="tseg"></div>
+        </div>
+      </div>
+
+      <div class="tpanel" id="boardTextPanel" style="display:none">
+        <div class="tpanel-h" onclick="togglePanel('boardTextPanel')">
+          <span>✏️ 판서 텍스트 (Vision 인식)</span>
+          <span id="boardTextBadge" class="badge" style="background:#F0FDF4;color:var(--cg)">로딩 중...</span>
+          <span style="margin-left:auto;font-size:10px;color:var(--cs)" id="boardTextToggleTxt">▼ 펼치기</span>
+        </div>
+        <div class="tpanel-b" id="boardTextBody">
+          <div id="boardTextContent"></div>
         </div>
       </div>
 
@@ -780,6 +818,10 @@ async function runAI(hasVideo){
       document.getElementById('durInfo').textContent=`실제 재생시간: 영상 미로드 (엑셀 값 ${q.duration||'-'} 사용)`;
     }
 
+    // ── 백그라운드: 음성전사 + 판서텍스트 (채점과 병렬 실행) ──
+    const transcriptPromise = (localServerOk && url) ? extractTranscriptFromServer(url) : Promise.resolve(null);
+    const boardTextPromise = visionUsed ? extractBoardText(capturedFrames, apiKey) : Promise.resolve(null);
+
     // ── Phase 2: 정량 채점 (개념·완성도) ─────────────────────
     setProgress('📊 개념·완성도 AI 채점 중...', 35);
     const durFmt=detectedDuration?fmt(detectedDuration):(q.duration||'정보없음');
@@ -945,6 +987,12 @@ JSON만 응답:
     aiReasons.fb1=r3.수학교사피드백||'';aiReasons.fb2=r3.또래학생피드백||'';aiReasons.fb3=r3.발표코치피드백||'';
 
     setProgress('✅ 채점 완료!',100);
+
+    // 음성전사·판서텍스트 결과 렌더 (이미 완료됐으면 즉시, 아직이면 대기)
+    const [transcriptData, boardTextData] = await Promise.all([transcriptPromise, boardTextPromise]);
+    if(url) renderTranscript(transcriptData);
+    if(visionUsed) renderBoardText(boardTextData, capturedFrames);
+
     setTimeout(()=>{applyScoresToUI();showResult();},400);
 
   }catch(err){
@@ -987,6 +1035,92 @@ function showCaptureStatus(success, frames, total, actual){
     txt.innerHTML=`<span style="color:#92400E">⚠️ 캡처 불가 (CORS 제한)</span> — 텍스트 기반 전달력 채점`;
     grid.innerHTML='';
   }
+}
+
+// ── 음성전사 & 판서텍스트 ────────────────────────────────────
+
+function togglePanel(id){
+  const body=document.getElementById(id).querySelector('.tpanel-b');
+  const txt=document.getElementById(id).querySelector('[id$="ToggleTxt"]');
+  const open=body.classList.toggle('open');
+  txt.textContent=open?'▲ 접기':'▼ 펼치기';
+}
+
+async function extractTranscriptFromServer(url){
+  try{
+    const r=await fetch('http://localhost:8080/extract-transcript',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url}),
+      signal:AbortSignal.timeout(90000)
+    });
+    if(!r.ok)return null;
+    return await r.json();
+  }catch(e){return null;}
+}
+
+function renderTranscript(data){
+  const panel=document.getElementById('transcriptPanel');
+  panel.style.display='block';
+  const badge=document.getElementById('transcriptBadge');
+  const stat=document.getElementById('transcriptStat');
+  const segs=document.getElementById('transcriptSegs');
+  if(!data||data.error||!data.segments||data.segments.length===0){
+    badge.textContent='자막 없음';badge.style.background='#FEF9C3';badge.style.color='#92400E';
+    stat.textContent=data?.error||'YouTube 자동자막이 없는 영상입니다. 판서 텍스트로 채점을 보조하세요.';
+    segs.innerHTML='';return;
+  }
+  badge.textContent=`${data.count}개 구간`;badge.style.background='#EFF6FF';badge.style.color='var(--ci)';
+  stat.textContent=`총 ${data.count}개 자막 구간 추출 완료`;
+  segs.innerHTML=data.segments.map(s=>
+    `<div class="tseg-line"><span class="tseg-time">${s.time_str}</span><span class="tseg-text">${escHtml(s.text)}</span></div>`
+  ).join('');
+}
+
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+async function extractBoardText(frames, apiKey){
+  const validFrames=frames.filter(Boolean);
+  if(!validFrames.length)return null;
+  const labels=['도입부','전개부','마무리'];
+  const content=[];
+  frames.forEach((f,i)=>{
+    if(!f)return;
+    content.push({type:'text',text:`[${labels[i]} 이미지]`});
+    content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:f}});
+  });
+  content.push({type:'text',text:`위 수학 발표 영상 캡처에서 칠판/화이트보드에 쓰인 텍스트·수식을 그대로 추출하세요.
+각 구간별로 판서 내용을 정확히 전사하되, 수식은 LaTeX 없이 텍스트로 표현하세요.
+JSON만 응답: {"도입부":"판서내용 또는 없음","전개부":"판서내용 또는 없음","마무리":"판서내용 또는 없음"}`});
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'x-api-key':apiKey,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,messages:[{role:'user',content}]})
+    });
+    if(!resp.ok)return null;
+    const d=await resp.json();
+    const txt=(d.content||[]).find(c=>c.type==='text')?.text||'';
+    const m=txt.match(/\{[\s\S]*\}/);
+    return m?JSON.parse(m[0]):null;
+  }catch(e){return null;}
+}
+
+function renderBoardText(data, frames){
+  const panel=document.getElementById('boardTextPanel');
+  panel.style.display='block';
+  const badge=document.getElementById('boardTextBadge');
+  const cont=document.getElementById('boardTextContent');
+  if(!data){
+    badge.textContent='Vision 없음';badge.style.background='#FEF9C3';badge.style.color='#92400E';
+    cont.innerHTML='<div class="tstat">영상 캡처가 없어 판서 텍스트를 인식할 수 없습니다.</div>';return;
+  }
+  const labels=['도입부','전개부','마무리'];
+  badge.textContent='인식 완료';badge.style.background='#F0FDF4';badge.style.color='var(--cg)';
+  cont.innerHTML=labels.map(lb=>{
+    const txt=data[lb]||'(판서 없음)';
+    return `<div class="tboard-frame"><div class="tboard-lbl">${lb}</div><div class="tboard-text">${escHtml(txt)}</div></div>`;
+  }).join('');
 }
 
 function showLoading(txt,pct){
@@ -1063,6 +1197,11 @@ function rerunAI(){
   capturedFrames=[];visionUsed=false;pendingAutoScore=false;
   document.getElementById('capStatus').style.display='none';
   document.getElementById('visionCaptures').style.display='none';
+  document.getElementById('transcriptPanel').style.display='none';
+  document.getElementById('boardTextPanel').style.display='none';
+  ['transcriptBody','boardTextBody'].forEach(id=>{document.getElementById(id).classList.remove('open');});
+  document.getElementById('transcriptToggleTxt').textContent='▼ 펼치기';
+  document.getElementById('boardTextToggleTxt').textContent='▼ 펼치기';
   const video=document.getElementById('vP');
   runAI(video.readyState>=1&&!!video.duration);
 }
