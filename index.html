@@ -269,6 +269,31 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
     <!-- 채점 결과 -->
     <div id="resultBox" style="display:none">
 
+      <!-- 음성 전사 (최상단) -->
+      <div id="transcriptPanel" style="display:none;border:.5px solid var(--bic);border-radius:8px;overflow:hidden;margin-bottom:10px;background:var(--bi)">
+        <div class="tpanel-h" onclick="togglePanel('transcriptPanel')" style="background:var(--bi);border-bottom:.5px solid var(--bic)">
+          <span style="color:var(--ci);font-weight:600">🎙️ 음성 전사 전문</span>
+          <span id="transcriptBadge" class="badge badge-blue" style="margin-left:6px"></span>
+          <span style="margin-left:auto;font-size:10px;color:var(--ci)" id="transcriptToggleTxt">▲ 접기</span>
+        </div>
+        <div class="tpanel-b open" id="transcriptBody" style="background:var(--bp);max-height:260px;overflow-y:auto">
+          <div class="tstat" id="transcriptStat"></div>
+          <div id="transcriptSegs" class="tseg"></div>
+        </div>
+      </div>
+
+      <!-- 판서 텍스트 -->
+      <div class="tpanel" id="boardTextPanel" style="display:none">
+        <div class="tpanel-h" onclick="togglePanel('boardTextPanel')">
+          <span>✏️ 판서 텍스트 (Vision 인식)</span>
+          <span id="boardTextBadge" class="badge" style="background:#F0FDF4;color:var(--cg)"></span>
+          <span style="margin-left:auto;font-size:10px;color:var(--cs)" id="boardTextToggleTxt">▼ 펼치기</span>
+        </div>
+        <div class="tpanel-b" id="boardTextBody">
+          <div id="boardTextContent"></div>
+        </div>
+      </div>
+
       <!-- 개념의 적절성 20점 -->
       <div class="scard">
         <div class="scardh sh-blue">
@@ -382,30 +407,6 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
           <div class="reason-box" id="fb2"></div>
           <div style="font-size:10px;color:var(--cs);font-weight:500;margin-top:4px">🎤 발표 코치 피드백</div>
           <div class="reason-box" id="fb3"></div>
-        </div>
-      </div>
-
-      <!-- 음성전사 & 판서텍스트 패널 -->
-      <div class="tpanel" id="transcriptPanel" style="display:none">
-        <div class="tpanel-h" onclick="togglePanel('transcriptPanel')">
-          <span>🎙️ 음성 전사</span>
-          <span id="transcriptBadge" class="badge" style="background:#EFF6FF;color:var(--ci)">로딩 중...</span>
-          <span style="margin-left:auto;font-size:10px;color:var(--cs)" id="transcriptToggleTxt">▼ 펼치기</span>
-        </div>
-        <div class="tpanel-b" id="transcriptBody">
-          <div class="tstat" id="transcriptStat"></div>
-          <div id="transcriptSegs" class="tseg"></div>
-        </div>
-      </div>
-
-      <div class="tpanel" id="boardTextPanel" style="display:none">
-        <div class="tpanel-h" onclick="togglePanel('boardTextPanel')">
-          <span>✏️ 판서 텍스트 (Vision 인식)</span>
-          <span id="boardTextBadge" class="badge" style="background:#F0FDF4;color:var(--cg)">로딩 중...</span>
-          <span style="margin-left:auto;font-size:10px;color:var(--cs)" id="boardTextToggleTxt">▼ 펼치기</span>
-        </div>
-        <div class="tpanel-b" id="boardTextBody">
-          <div id="boardTextContent"></div>
         </div>
       </div>
 
@@ -1118,12 +1119,13 @@ function renderTranscript(data){
   const stat=document.getElementById('transcriptStat');
   const segs=document.getElementById('transcriptSegs');
   if(!data||data.error||!data.segments||data.segments.length===0){
-    badge.textContent='자막 없음';badge.style.background='#FEF9C3';badge.style.color='#92400E';
-    stat.textContent=data?.error||'YouTube 자동자막이 없는 영상입니다. 판서 텍스트로 채점을 보조하세요.';
-    segs.innerHTML='';return;
+    badge.textContent='자막 없음';badge.className='badge badge-orange';
+    stat.innerHTML=`<span style="color:#92400E">${data?.error||'YouTube 자동자막이 없는 영상입니다.'}</span>`;
+    segs.innerHTML='<div style="font-size:11px;color:var(--cs);padding:4px 0">자막이 없어 음성 전사를 표시할 수 없습니다. Vision 판서 텍스트를 참고하세요.</div>';
+    return;
   }
-  badge.textContent=`${data.count}개 구간`;badge.style.background='#EFF6FF';badge.style.color='var(--ci)';
-  stat.textContent=`총 ${data.count}개 자막 구간 추출 완료`;
+  badge.textContent=`${data.count}개 구간`;badge.className='badge badge-blue';
+  stat.textContent=`총 ${data.count}개 자막 구간`;
   segs.innerHTML=data.segments.map(s=>
     `<div class="tseg-line"><span class="tseg-time">${s.time_str}</span><span class="tseg-text">${escHtml(s.text)}</span></div>`
   ).join('');
