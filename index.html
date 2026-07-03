@@ -1647,6 +1647,7 @@ JSON만 응답:
 
     setTimeout(()=>{
       applyScoresToUI();showResult();
+      saveResultOnly();  // 채점 완료 즉시 저장 (수동/자동 공통)
       if(autoBatchMode){setTimeout(()=>saveNext(),1800);}
     },400);
 
@@ -1902,19 +1903,22 @@ function rerunAI(){
   runAI(video.readyState>=1&&!!video.duration);
 }
 
-function saveNext(){
+function saveResultOnly(){
+  if(curI<0||curI>=queue.length)return;
   const s1=SC.concept+SC.term,s2=SC.time+SC.acc+SC.logic,s3=SC.board+SC.speak,s4=SC.ex+SC.eng+SC.peer;
-  if(curI>=0&&curI<queue.length){
-    queue[curI].status2='done';
-    queue[curI].result={
-      scores:{개념선정:SC.concept,용어정리:SC.term,시간준수:SC.time,정확성:SC.acc,논리성:SC.logic,판서:SC.board,말하기:SC.speak,예시:SC.ex,흥미유발:SC.eng,또래이해:SC.peer},
-      totals:{개념적절성:s1,설명완성도:s2,전달력:s3,창의성:s4,총점:s1+s2+s3+s4},
-      reasons:{개념:document.getElementById('r1').textContent,완성도:document.getElementById('r2').textContent,전달력:document.getElementById('r3').textContent,fb1:document.getElementById('fb1').textContent,fb2:document.getElementById('fb2').textContent,fb3:document.getElementById('fb3').textContent},
-      durInfo:document.getElementById('durInfo').textContent,
-      visionUsed,ts:new Date().toISOString()
-    };
-  }
+  queue[curI].status2='done';
+  queue[curI].result={
+    scores:{개념선정:SC.concept,용어정리:SC.term,시간준수:SC.time,정확성:SC.acc,논리성:SC.logic,판서:SC.board,말하기:SC.speak,예시:SC.ex,흥미유발:SC.eng,또래이해:SC.peer},
+    totals:{개념적절성:s1,설명완성도:s2,전달력:s3,창의성:s4,총점:s1+s2+s3+s4},
+    reasons:{개념:document.getElementById('r1').textContent,완성도:document.getElementById('r2').textContent,전달력:document.getElementById('r3').textContent,fb1:document.getElementById('fb1').textContent,fb2:document.getElementById('fb2').textContent,fb3:document.getElementById('fb3').textContent},
+    durInfo:document.getElementById('durInfo').textContent,
+    visionUsed,ts:new Date().toISOString()
+  };
   svTmp();updProg();
+}
+
+function saveNext(){
+  saveResultOnly();
   const ni=queue.findIndex((q,i)=>i>curI&&q.status2==='pending');
   if(ni>=0){jQ(ni);}
   else if(queue.every(q=>q.status2==='done')){
