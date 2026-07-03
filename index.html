@@ -7,6 +7,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 :root{--cp:#111827;--cs:#6B7280;--ci:#2563EB;--cg:#16A34A;--bp:#FFFFFF;--bs:#F9FAFB;--bi:#EFF6FF;--bg:#F0FDF4;--bt:#E5E7EB;--b2:#D1D5DB;--bic:#BFDBFE;--bgc:#BBF7D0;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
 @media(prefers-color-scheme:dark){:root{--cp:#F9FAFB;--cs:#9CA3AF;--ci:#60A5FA;--cg:#4ADE80;--bp:#1F2937;--bs:#111827;--bi:#172554;--bg:#14532D;--bt:#374151;--b2:#4B5563;--bic:#1E3A5F;--bgc:#166534;}}
@@ -238,17 +239,24 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
       <div style="font-size:11px;color:var(--cs);margin-top:2px">학년별 문제·정답·핵심포인트·필수용어 등록 (AI 채점 기준 데이터)</div>
     </div>
     <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
-      <button class="btn bsc" style="font-size:11px" onclick="downloadPdSample()">📋 샘플 JSON</button>
       <button class="btn bsc" style="font-size:11px" onclick="exportPdJSON()">💾 내보내기</button>
+      <label class="btn bpr" style="font-size:11px;cursor:pointer;background:#7c3aed;border-color:#7c3aed">📄 PDF 업로드<input type="file" id="pdPdfIn" accept=".pdf" style="display:none" onchange="uploadPdPDF(this)"></label>
       <label class="btn bpr" style="font-size:11px;cursor:pointer">📂 JSON 업로드<input type="file" id="pdJsonIn" accept=".json" style="display:none" onchange="uploadPdJSON(this)"></label>
       <label class="btn bxl" style="font-size:11px;cursor:pointer">📊 엑셀 업로드<input type="file" id="pdXlIn" accept=".xlsx,.xls" style="display:none" onchange="uploadPdXL(this)"></label>
     </div>
   </div>
 
+  <!-- PDF parse status -->
+  <div id="pdPdfStatus" style="display:none;margin-bottom:12px;padding:14px 16px;border-radius:8px;background:var(--bi);border:.5px solid var(--bic)">
+    <div style="font-size:12px;font-weight:500;color:var(--ci)" id="pdPdfMsg">📄 PDF 분석 중...</div>
+    <div class="prog-bar" style="margin-top:8px"><div class="prog-fill" id="pdPdfProg" style="width:0%"></div></div>
+    <div style="font-size:10px;color:var(--cs);margin-top:5px" id="pdPdfSub"></div>
+  </div>
+
   <!-- Excel format note -->
   <div class="fmt-note" id="pdFmtNote" style="margin-bottom:12px">
-    <strong>엑셀 열 형식</strong> (첫 행 = 헤더): <code>학년</code> | <code>번호</code> | <code>문제제목</code> | <code>문제내용</code> | <code>정답</code> | <code>핵심풀이포인트</code> | <code>필수용어</code>(쉼표 구분)<br>
-    학년 값: 초등4 / 초등5 / 초등6 / 중1 / 중2 / 중3
+    <strong>📄 PDF 업로드</strong> — 문제, 정답, 핵심포인트, 필수용어가 포함된 PDF를 올리면 AI가 자동으로 학년별 문제 데이터를 추출합니다.<br>
+    <strong>엑셀 열 형식</strong>: <code>학년</code> | <code>번호</code> | <code>문제제목</code> | <code>문제내용</code> | <code>정답</code> | <code>핵심풀이포인트</code> | <code>필수용어</code>(쉼표 구분)
   </div>
 
   <!-- Grade tabs -->
@@ -819,6 +827,133 @@ function uploadPdXL(inp){
 function exportPdJSON(){
   const blob=new Blob([JSON.stringify(PD,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='문제데이터.json';a.click();
+}
+
+// ── PDF → 문제 데이터 추출 ───────────────────────────────────
+async function uploadPdPDF(inp){
+  const f=inp.files[0];if(!f)return;
+  inp.value='';
+  const apiKey=localStorage.getItem('apiKey');
+  if(!apiKey){alert('API 키를 먼저 등록하세요.');showApiModal();return;}
+
+  const pdPdfStatus=document.getElementById('pdPdfStatus');
+  const pdPdfMsg=document.getElementById('pdPdfMsg');
+  const pdPdfProg=document.getElementById('pdPdfProg');
+  const pdPdfSub=document.getElementById('pdPdfSub');
+  pdPdfStatus.style.display='block';
+
+  try{
+    // ── 1. pdf.js로 텍스트 추출 ──
+    pdPdfMsg.textContent='📄 PDF 텍스트 추출 중...';
+    pdPdfProg.style.width='10%';
+    pdPdfSub.textContent=f.name;
+
+    if(typeof pdfjsLib==='undefined'){
+      // pdf.js 스크립트 로드 확인
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        s.onload=res;s.onerror=()=>rej(new Error('pdf.js 로드 실패'));
+        document.head.appendChild(s);
+      });
+    }
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const ab=await f.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+    const numPages=pdf.numPages;
+    let fullText='';
+    for(let p=1;p<=numPages;p++){
+      const page=await pdf.getPage(p);
+      const tc=await page.getTextContent();
+      const pageText=tc.items.map(it=>it.str).join(' ');
+      fullText+=`\n[${p}페이지]\n${pageText}`;
+      pdPdfProg.style.width=`${10+Math.round(p/numPages*40)}%`;
+      pdPdfSub.textContent=`텍스트 추출 중... ${p}/${numPages} 페이지`;
+    }
+
+    if(!fullText.trim()){throw new Error('PDF에서 텍스트를 추출할 수 없습니다. (이미지 PDF이거나 보안 설정)');}
+
+    // ── 2. Claude AI로 구조화 ──
+    pdPdfMsg.textContent='🤖 AI가 문제 데이터 구조화 중...';
+    pdPdfProg.style.width='55%';
+    pdPdfSub.textContent='학년·문제번호·정답·핵심포인트·필수용어 추출';
+
+    const prompt=`당신은 수학말하기대회 문제 PDF를 분석하는 전문가입니다.
+아래 PDF 텍스트에서 학년별 문제 데이터를 추출하여 JSON으로 반환하세요.
+
+추출 항목:
+- 학년: "초등4", "초등5", "초등6", "중1", "중2", "중3" 중 하나
+- id: 문제 번호 (정수)
+- title: "N번 — 단원명" 형식 (예: "3번 — 정비례와 반비례")
+- q: 문제 전문 (조건·보기 포함)
+- ans: 정답 (풀이 과정 제외, 최종 답만)
+- kp: 핵심 풀이 포인트 — 학생이 발표에서 반드시 보여줘야 할 풀이 단계 (채점 기준)
+- terms: 필수 수학 용어 배열 (해당 단원에서 사용해야 할 용어들)
+
+반환 형식 (JSON만, 설명 없음):
+{"초등4":[{"id":1,"title":"...","q":"...","ans":"...","kp":"...","terms":["...","..."]}],"중1":[...]}
+
+학년이 여러 개면 모두 포함. 해당 학년 문제가 없으면 키 생략.
+텍스트에서 명확하지 않은 항목은 빈 문자열("") 또는 빈 배열([])로 처리.
+
+PDF 텍스트:
+"""
+${fullText.slice(0,12000)}
+"""`;
+
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4096,messages:[{role:'user',content:prompt}]})
+    });
+    if(!resp.ok){const e=await resp.json();throw new Error(e.error?.message||'API 오류');}
+    const data=await resp.json();
+    const raw=data.content?.[0]?.text||'';
+
+    pdPdfProg.style.width='80%';
+    pdPdfMsg.textContent='📋 결과 검토 중...';
+
+    // JSON 파싱
+    const m=raw.match(/\{[\s\S]*\}/);
+    if(!m)throw new Error('AI 응답에서 JSON을 찾을 수 없습니다.');
+    const parsed=JSON.parse(m[0]);
+
+    // ── 3. 결과 미리보기 + 확인 ──
+    pdPdfProg.style.width='100%';
+    pdPdfMsg.textContent='✅ 추출 완료';
+
+    let summary='';
+    let totalProbs=0;
+    PD_GRADES.forEach(g=>{
+      if(parsed[g]&&parsed[g].length){
+        summary+=`${g}: ${parsed[g].length}문제\n`;
+        totalProbs+=parsed[g].length;
+      }
+    });
+
+    if(!totalProbs){throw new Error('추출된 문제가 없습니다. PDF 내용과 형식을 확인해주세요.');}
+
+    pdPdfSub.textContent=summary.trim().replace(/\n/g,' | ');
+
+    if(confirm(`✅ PDF 분석 완료!\n\n${summary}\n총 ${totalProbs}문제를 등록할까요?\n기존 같은 학년 데이터는 덮어씁니다.`)){
+      PD_GRADES.forEach(g=>{if(parsed[g]&&parsed[g].length)PD[g]=parsed[g];});
+      savePD();
+      renderPdMgr();
+      // 첫 번째로 추출된 학년 탭으로 이동
+      const firstGr=PD_GRADES.find(g=>parsed[g]&&parsed[g].length);
+      if(firstGr){_pdGr=firstGr;renderPdMgr();}
+      setTimeout(()=>{pdPdfStatus.style.display='none';},2000);
+    }else{
+      pdPdfStatus.style.display='none';
+    }
+  }catch(err){
+    pdPdfMsg.textContent='❌ 오류: '+err.message;
+    pdPdfMsg.style.color='#991b1b';
+    pdPdfProg.style.background='#fca5a5';
+    pdPdfSub.textContent='파일을 다시 확인하거나 JSON/엑셀로 직접 입력하세요.';
+    setTimeout(()=>{pdPdfStatus.style.display='none';pdPdfMsg.style.color='';pdPdfProg.style.background='';},5000);
+  }
 }
 
 function downloadPdSample(){
