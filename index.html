@@ -160,7 +160,14 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
 .pf-inp:focus{outline:none;border-color:var(--ci)}
 .pd-empty{padding:32px;text-align:center;color:var(--cs);border:.5px dashed var(--b2);border-radius:8px;font-size:13px}
 .pd-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center}
-.pd-modal-box{background:var(--bg);border-radius:12px;padding:22px;width:min(580px,95vw);max-height:90vh;overflow-y:auto;border:.5px solid var(--bt)}
+.pd-modal-box{background:var(--bg);border-radius:12px;padding:0;width:min(820px,97vw);max-height:95vh;overflow-y:auto;border:.5px solid var(--bt);display:flex;flex-direction:column}
+.pd-modal-hd{padding:16px 20px;border-bottom:.5px solid var(--bt);font-size:15px;font-weight:500;position:sticky;top:0;background:var(--bg);z-index:1}
+.pd-modal-body{padding:18px 20px;display:flex;gap:18px}
+.pd-modal-col{flex:1;min-width:0}
+.pd-modal-col-r{flex:1;min-width:0;background:var(--bs);border-radius:8px;padding:14px;border:.5px solid var(--bt)}
+.pd-sec-lbl{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--ci);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.pd-sec-lbl::after{content:'';flex:1;height:.5px;background:var(--bic)}
+.pd-modal-ft{padding:12px 20px;border-top:.5px solid var(--bt);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--bg)}
 .fmt-note{font-size:10px;color:var(--cs);line-height:1.7;background:var(--bs);border-radius:6px;padding:8px 10px;border:.5px solid var(--bt);margin-top:8px}
 </style>
 </head>
@@ -287,23 +294,50 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
 <!-- Add/Edit Problem Modal -->
 <div class="pd-modal-bg" id="pdModalBg" style="display:none">
   <div class="pd-modal-box">
-    <div style="font-size:15px;font-weight:500;margin-bottom:14px" id="pdModalTitle">문제 추가</div>
-    <div style="display:grid;grid-template-columns:36px 1fr 1fr;gap:0 10px">
-      <div class="pf-row"><label>번호</label><input class="pf-inp" id="pf-id" type="number" min="1" placeholder="1"></div>
-      <div class="pf-row"><label>문제 제목</label><input class="pf-inp" id="pf-title" placeholder="예: 3번 — 정비례와 반비례"></div>
-      <div class="pf-row"><label>관련단원</label><input class="pf-inp" id="pf-unit" placeholder="예: 정비례와 반비례"></div>
+    <!-- 헤더 -->
+    <div class="pd-modal-hd" id="pdModalTitle">문제 추가</div>
+
+    <!-- 본문: 좌(기본정보) + 우(채점참조) -->
+    <div class="pd-modal-body">
+
+      <!-- 왼쪽: 기본 정보 -->
+      <div class="pd-modal-col">
+        <div class="pd-sec-lbl">기본 정보</div>
+        <div style="display:grid;grid-template-columns:56px 1fr;gap:0 8px">
+          <div class="pf-row"><label>번호</label><input class="pf-inp" id="pf-id" type="number" min="1" placeholder="1"></div>
+          <div class="pf-row"><label>관련단원</label><input class="pf-inp" id="pf-unit" placeholder="예: 정비례와 반비례"></div>
+        </div>
+        <div class="pf-row"><label>문제 제목</label><input class="pf-inp" id="pf-title" placeholder="예: 3번 — 정비례와 반비례"></div>
+        <div class="pf-row"><label>문제 내용</label><textarea class="pf-inp" id="pf-q" rows="5" placeholder="문제 전문을 입력하세요 (조건·보기 포함)"></textarea></div>
+        <div class="pf-row"><label>정답</label><input class="pf-inp" id="pf-ans" placeholder="예: A(3, -1)"></div>
+        <div class="pf-row"><label>필수용어 <span style="font-weight:400;font-size:10px;opacity:.7">쉼표 구분</span></label><input class="pf-inp" id="pf-terms" placeholder="예: 정비례, 비례상수, 좌표, 좌표평면"></div>
+        <div class="pf-row"><label>핵심 풀이 포인트 <span style="font-weight:400;font-size:10px;opacity:.7">학생이 발표에서 보여줘야 할 단계</span></label><textarea class="pf-inp" id="pf-kp" rows="3" placeholder="예: A(a,-a/3), B(a,-2a). |5a/3|=5 → a=3"></textarea></div>
+      </div>
+
+      <!-- 오른쪽: 채점 참조 데이터 -->
+      <div class="pd-modal-col-r">
+        <div class="pd-sec-lbl">채점 참조 데이터 <span style="font-size:9px;font-weight:400;letter-spacing:0;opacity:.7">AI 채점 프롬프트에 자동 삽입</span></div>
+        <div class="pf-row">
+          <label>필수개념 <span style="font-weight:400;font-size:10px;color:var(--ci)">→ 개념선정 채점 기준</span></label>
+          <textarea class="pf-inp" id="pf-concept" rows="3" placeholder="이 문항에서 반드시 사용해야 할 수학 개념&#10;예: 분수의 나눗셈 a÷b = a×(1/b), 역수의 의미"></textarea>
+        </div>
+        <div class="pf-row">
+          <label>개념설명 <span style="font-weight:400;font-size:10px;color:var(--ci)">→ 정확성·논리성 채점 기준</span></label>
+          <textarea class="pf-inp" id="pf-conceptDesc" rows="3" placeholder="올바른 개념 설명 기준&#10;AI가 학생 설명의 정확성 판단에 활용"></textarea>
+        </div>
+        <div class="pf-row">
+          <label>해설 <span style="font-weight:400;font-size:10px;color:var(--ci)">→ 정확성·논리성 채점 참조</span></label>
+          <textarea class="pf-inp" id="pf-solution" rows="4" placeholder="올바른 풀이 과정 전문&#10;AI가 학생 풀이의 오류·논리 비약 감지에 활용"></textarea>
+        </div>
+        <div class="pf-row">
+          <label>다른풀이 <span style="font-weight:400;font-size:10px;color:var(--ci)">→ 예시 채점 — 학생 시도 시 인정</span></label>
+          <textarea class="pf-inp" id="pf-altSolution" rows="3" placeholder="다른 방법으로 푸는 경우 기술&#10;없으면 비워두세요"></textarea>
+        </div>
+      </div>
     </div>
-    <div class="pf-row"><label>문제 내용</label><textarea class="pf-inp" id="pf-q" rows="3" placeholder="문제 전문을 입력하세요"></textarea></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px">
-      <div class="pf-row"><label>정답</label><input class="pf-inp" id="pf-ans" placeholder="예: A(3, -1)"></div>
-      <div class="pf-row"><label>필수용어 (쉼표 구분)</label><input class="pf-inp" id="pf-terms" placeholder="예: 정비례, 비례상수, 좌표"></div>
-    </div>
-    <div class="pf-row"><label>핵심 풀이 포인트 <span style="font-weight:400;opacity:.7">(채점 기준 — 학생이 발표에서 보여줘야 할 단계)</span></label><textarea class="pf-inp" id="pf-kp" rows="2" placeholder="예: A(a,-a/3), B(a,-2a). |5a/3|=5 → a=3"></textarea></div>
-    <div class="pf-row"><label>필수개념 <span style="font-weight:400;opacity:.7;font-size:10px">→ 개념선정·정확성 채점 기준</span></label><textarea class="pf-inp" id="pf-concept" rows="2" placeholder="이 문항에서 반드시 사용해야 할 수학 개념 (예: 정비례 관계 y=ax, 비례상수의 의미)"></textarea></div>
-    <div class="pf-row"><label>개념설명 <span style="font-weight:400;opacity:.7;font-size:10px">→ 개념선정·논리성 채점 기준</span></label><textarea class="pf-inp" id="pf-conceptDesc" rows="2" placeholder="올바른 개념 설명 기준 (AI가 학생 설명의 정확성 판단에 활용)"></textarea></div>
-    <div class="pf-row"><label>해설 <span style="font-weight:400;opacity:.7;font-size:10px">→ 정확성·논리성 채점 참조</span></label><textarea class="pf-inp" id="pf-solution" rows="3" placeholder="올바른 풀이 과정 전문 (AI가 학생 풀이의 오류·논리 비약 감지에 활용)"></textarea></div>
-    <div class="pf-row"><label>다른풀이 <span style="font-weight:400;opacity:.7;font-size:10px">→ 예시 채점 — 학생이 이 방법 시도 시 인정</span></label><textarea class="pf-inp" id="pf-altSolution" rows="2" placeholder="다른 방법으로 푸는 경우 기술 (없으면 비워두세요)"></textarea></div>
-    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+
+    <!-- 푸터 -->
+    <div class="pd-modal-ft">
       <button class="btn bsc" onclick="closePdModal()">취소</button>
       <button class="btn bpr" onclick="saveProbModal()">저장</button>
     </div>
