@@ -1478,6 +1478,7 @@ JSON만 응답:
     // ── Phase 3: 전달력 (Vision 또는 텍스트) — 독립 2회 병렬 ─
     setProgress(visionUsed?'📸 판서·발표 영상 직접 분석 중... (2회 독립 병렬)':'✍️ 전달력 AI 추정 채점 중... (2회 독립 병렬)', 60);
 
+    let r2a={},r2b={};  // 블록 외부 선언 — 신뢰도 계산에서 참조
     if(visionUsed && capturedFrames.some(Boolean)){
       const pr2=`당신은 수학말하기대회 판서 심사위원입니다. 첨부된 3구간 영상 캡처(도입부·전개부·마무리)를 분석하여 아래 기준표에 따라 채점하세요.
 
@@ -1522,7 +1523,7 @@ JSON만 응답:
 
 JSON만 응답:
 {"판서이유":"이미지 관찰 기반 2문장","판서":숫자,"말하기이유":"이미지 관찰 기반 2문장","말하기":숫자}`;
-      const [r2a,r2b]=await Promise.all([callVisionAI(pr2,capturedFrames),callVisionAI(pr2,capturedFrames)]);
+      [r2a,r2b]=await Promise.all([callVisionAI(pr2,capturedFrames),callVisionAI(pr2,capturedFrames)]);
       const r2m=avgTwo(r2a,r2b,['판서','말하기']);
       SC.board=clamp(r2m.판서??6);SC.speak=clamp(r2m.말하기??6);
       aiReasons.r3=`[판서] ${r2a.판서이유||''}\n[말하기] ${r2a.말하기이유||''}`;
@@ -1559,7 +1560,7 @@ JSON만 응답:
 
 JSON만 응답:
 {"판서이유":"형식에 맞춘 2문장","판서":숫자,"말하기이유":"형식에 맞춘 2문장","말하기":숫자}`;
-      const [r2a,r2b]=await Promise.all([callTextAI(pr2),callTextAI(pr2)]);
+      [r2a,r2b]=await Promise.all([callTextAI(pr2),callTextAI(pr2)]);
       const r2m=avgTwo(r2a,r2b,['판서','말하기']);
       SC.board=clamp(r2m.판서??6);SC.speak=clamp(r2m.말하기??6);
       aiReasons.r3=`[판서] ${r2a.판서이유||''}\n[말하기] ${r2a.말하기이유||''}\n\n※ 영상 캡처 불가 — 텍스트 추정 채점 (심사위원이 영상 직접 확인 후 슬라이더 조정 권장)`;
@@ -1650,9 +1651,18 @@ JSON만 응답:
     },400);
 
   }catch(err){
-    if(err.message==='INVALID_KEY'){alert('API 키가 유효하지 않습니다.');showApiModal();}
-    else if(err.message==='NO_KEY'){showApiModal();}
-    else{alert('AI 채점 오류: '+err.message);}
+    const errMsg=err.message||String(err);
+    if(errMsg==='INVALID_KEY'){
+      setProgress('❌ API 키 오류 — 키를 다시 확인하세요',0);
+      alert('API 키가 유효하지 않습니다.');showApiModal();
+    }else if(errMsg==='NO_KEY'){
+      setProgress('❌ API 키 없음 — 키를 입력하세요',0);
+      showApiModal();
+    }else{
+      setProgress(`❌ 채점 오류: ${errMsg}`,0);
+      console.error('[runAI]',err);
+    }
+    if(autoBatchMode){autoBatchMode=false;}
     showEmpty();
   }
 }
