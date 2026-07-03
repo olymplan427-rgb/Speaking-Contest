@@ -1755,9 +1755,9 @@ function renderTranscript(data){
   const stat=document.getElementById('transcriptStat');
   const segs=document.getElementById('transcriptSegs');
   if(!data||data.error||!data.segments||data.segments.length===0){
-    badge.textContent='자막 없음';badge.className='badge badge-orange';
-    stat.innerHTML=`<span style="color:#92400E">${data?.error||'YouTube 자동자막이 없는 영상입니다.'}</span>`;
-    segs.innerHTML='<div style="font-size:11px;color:var(--cs);padding:4px 0">자막이 없어 음성 전사를 표시할 수 없습니다. Vision 판서 텍스트를 참고하세요.</div>';
+    badge.textContent='전사 실패';badge.className='badge badge-orange';
+    stat.innerHTML=`<span style="color:#92400E">${data?.error||'음성 전사에 실패했습니다.'}</span>`;
+    segs.innerHTML='<div style="font-size:11px;color:var(--cs);padding:4px 0">음성 전사를 가져올 수 없습니다. 로컬 서버(server.py)가 실행 중인지 확인하세요.</div>';
     return;
   }
   badge.textContent=`${data.count}개 구간`;badge.className='badge badge-blue';

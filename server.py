@@ -143,89 +143,56 @@ def extract_frames():
 
 @app.route('/extract-transcript', methods=['POST'])
 def extract_transcript():
-    """YouTube 자동자막(한국어) 추출 → 타임스탬프 + 전체 텍스트 반환"""
+    """Whisper STT로 실제 음성 전사 → 타임스탬프 + 전체 텍스트 반환"""
     data = request.json or {}
     url = (data.get('url') or '').strip()
     if not url:
         return jsonify({'error': 'URL이 없습니다.'}), 400
 
+    try:
+        import whisper as _whisper
+    except ImportError:
+        return jsonify({'error': 'Whisper가 설치되지 않았습니다. pip install openai-whisper 를 실행하세요.', 'segments': [], 'full_text': ''}), 200
+
     with tempfile.TemporaryDirectory() as tmpdir:
-        sub_base = os.path.join(tmpdir, 'sub')
+        audio_path = os.path.join(tmpdir, 'audio.m4a')
 
-        # ━━ 1. 한국어 자동자막 다운로드 (수동자막 우선, 없으면 자동생성) ━━
-        result = subprocess.run([
-            'yt-dlp',
-            '--write-subs', '--write-auto-subs',
-            '--sub-lang', 'ko',
-            '--sub-format', 'vtt',
-            '--skip-download',
-            '--no-playlist',
-            '-o', sub_base,
-            url
-        ], capture_output=True, text=True, timeout=60)
+        # ━━ 1. 오디오 다운로드 ━━
+        dl = subprocess.run([
+            'yt-dlp', '-f', 'bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio',
+            '--no-playlist', '--socket-timeout', '30',
+            '-o', audio_path, url
+        ], capture_output=True, text=True, timeout=180)
 
-        # VTT 파일 찾기
-        vtt_path = None
-        for fn in os.listdir(tmpdir):
-            if fn.endswith('.vtt'):
-                vtt_path = os.path.join(tmpdir, fn)
-                break
+        # m4a 없으면 webm → ffmpeg 변환 시도
+        if not (os.path.exists(audio_path) and os.path.getsize(audio_path) > 0):
+            for fn in os.listdir(tmpdir):
+                if fn.startswith('audio') and os.path.getsize(os.path.join(tmpdir, fn)) > 0:
+                    src = os.path.join(tmpdir, fn)
+                    conv = os.path.join(tmpdir, 'audio_conv.m4a')
+                    subprocess.run(['ffmpeg', '-y', '-i', src, '-vn', '-acodec', 'aac', conv],
+                                   capture_output=True, timeout=60)
+                    if os.path.exists(conv) and os.path.getsize(conv) > 0:
+                        audio_path = conv
+                    break
 
-        if not vtt_path:
-            # ━━ Whisper 폴백: 자막 없을 때 오디오 다운 → 전사 ━━
-            try:
-                import whisper as _whisper
-                audio_path = os.path.join(tmpdir, 'audio.m4a')
-                subprocess.run([
-                    'yt-dlp', '-f', 'bestaudio[ext=m4a]/bestaudio',
-                    '--no-playlist', '-o', audio_path, url
-                ], capture_output=True, timeout=120)
-                if os.path.exists(audio_path) and os.path.getsize(audio_path) > 0:
-                    model = _whisper.load_model('small')
-                    result = model.transcribe(audio_path, language='ko')
-                    segs = []
-                    for s in result.get('segments', []):
-                        secs = s['start']
-                        segs.append({'time': round(secs, 1), 'time_str': f'{int(secs//60):02d}:{int(secs%60):02d}', 'text': s['text'].strip()})
-                    full_text = result.get('text', '').strip()
-                    return jsonify({'segments': segs, 'full_text': full_text, 'count': len(segs), 'method': 'whisper'})
-            except (ImportError, Exception):
-                pass
-            return jsonify({'error': '자막을 찾을 수 없습니다. YouTube 자동자막이 없는 영상입니다.', 'segments': [], 'full_text': ''}), 200
+        if not (os.path.exists(audio_path) and os.path.getsize(audio_path) > 0):
+            return jsonify({'error': '오디오 다운로드에 실패했습니다. URL을 확인하세요.', 'segments': [], 'full_text': ''}), 200
 
-        # ━━ 2. VTT 파싱 → 타임스탬프 세그먼트 ━━
-        with open(vtt_path, 'r', encoding='utf-8') as f:
-            raw = f.read()
+        # ━━ 2. Whisper 음성 전사 ━━
+        model = _whisper.load_model('small')
+        result = model.transcribe(audio_path, language='ko', verbose=False)
 
-        segments = []
-        seen_texts = set()
-        # VTT 블록: 00:00:00.000 --> 00:00:00.000\n텍스트
-        blocks = re.split(r'\n\n+', raw)
-        for block in blocks:
-            lines = block.strip().splitlines()
-            # 타임스탬프 줄 찾기
-            ts_line = next((l for l in lines if '-->' in l), None)
-            if not ts_line:
+        segs = []
+        for s in result.get('segments', []):
+            text = s['text'].strip()
+            if not text:
                 continue
-            m = re.match(r'(\d+:\d+:\d+[\.,]\d+)\s*-->\s*(\d+:\d+:\d+[\.,]\d+)', ts_line)
-            if not m:
-                continue
-            start_str = m.group(1).replace(',', '.')
-            # 텍스트 줄: 타임스탬프 이후 줄, HTML 태그 제거
-            text_lines = [l for l in lines if '-->' not in l and not l.strip().isdigit() and l.strip()]
-            text = ' '.join(text_lines)
-            text = re.sub(r'<[^>]+>', '', text).strip()  # HTML 태그 제거
-            text = re.sub(r'\s+', ' ', text)
-            if not text or text in seen_texts:
-                continue
-            seen_texts.add(text)
-            # 타임스탬프 → 초
-            parts = start_str.split(':')
-            secs = int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
-            segments.append({'time': round(secs, 1), 'time_str': f'{int(secs//60):02d}:{int(secs%60):02d}', 'text': text})
+            secs = s['start']
+            segs.append({'time': round(secs, 1), 'text': text})
 
-        full_text = ' '.join(s['text'] for s in segments)
-        return jsonify({'segments': segments, 'full_text': full_text, 'count': len(segments)})
+        full_text = result.get('text', '').strip()
+        return jsonify({'segments': segs, 'full_text': full_text, 'count': len(segs), 'method': 'whisper'})
 
 
 if __name__ == '__main__':
