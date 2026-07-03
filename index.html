@@ -1742,7 +1742,7 @@ async function extractTranscriptFromServer(url){
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({url}),
-      signal:AbortSignal.timeout(90000)
+      signal:AbortSignal.timeout(300000)
     });
     if(!r.ok)return null;
     return await r.json();
