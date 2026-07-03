@@ -172,6 +172,25 @@ def extract_transcript():
                 break
 
         if not vtt_path:
+            # ━━ Whisper 폴백: 자막 없을 때 오디오 다운 → 전사 ━━
+            try:
+                import whisper as _whisper
+                audio_path = os.path.join(tmpdir, 'audio.m4a')
+                subprocess.run([
+                    'yt-dlp', '-f', 'bestaudio[ext=m4a]/bestaudio',
+                    '--no-playlist', '-o', audio_path, url
+                ], capture_output=True, timeout=120)
+                if os.path.exists(audio_path) and os.path.getsize(audio_path) > 0:
+                    model = _whisper.load_model('small')
+                    result = model.transcribe(audio_path, language='ko')
+                    segs = []
+                    for s in result.get('segments', []):
+                        secs = s['start']
+                        segs.append({'time': round(secs, 1), 'time_str': f'{int(secs//60):02d}:{int(secs%60):02d}', 'text': s['text'].strip()})
+                    full_text = result.get('text', '').strip()
+                    return jsonify({'segments': segs, 'full_text': full_text, 'count': len(segs), 'method': 'whisper'})
+            except (ImportError, Exception):
+                pass
             return jsonify({'error': '자막을 찾을 수 없습니다. YouTube 자동자막이 없는 영상입니다.', 'segments': [], 'full_text': ''}), 200
 
         # ━━ 2. VTT 파싱 → 타임스탬프 세그먼트 ━━

@@ -189,7 +189,10 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
     <div class="rth"><div>#</div><div>팀명 / 팀원</div><div>캠퍼스</div><div style="text-align:center">문항</div><div style="text-align:center">시간</div><div style="text-align:center">상태</div></div>
     <div class="rtbd" id="revList"></div>
   </div>
-  <button class="stbtn" onclick="startJudge()">🤖 AI 자동 심사 시작</button>
+  <div style="display:flex;gap:8px;margin-top:12px">
+    <button class="stbtn" style="flex:1;font-size:13px" onclick="startJudge()">▶ 한 명씩 심사</button>
+    <button class="stbtn" style="flex:1;font-size:13px;background:#1d4ed8" onclick="startAutoJudge()">🤖 전체 자동 채점</button>
+  </div>
 </div>
 </div>
 
@@ -469,6 +472,7 @@ let detectedDuration=0;
 let visionUsed=false;
 let pendingAutoScore=false; // jQ에서 세팅, vidOk에서 소비
 let localServerOk=false; // 로컬 ffmpeg 서버 연결 여부
+let autoBatchMode=false; // 전체 자동 채점 모드
 
 // ── 로컬 서버 상태 체크 ───────────────────────────────────────
 async function checkLocalServer(){
@@ -551,6 +555,17 @@ function renderReview(){
 
 function startJudge(){
   if(!queue.length){alert('엑셀을 먼저 업로드하세요.');return;}
+  autoBatchMode=false;
+  const fi=queue.findIndex(q=>q.status2==='pending');
+  jQ(fi>=0?fi:0);showView('v3');
+}
+
+function startAutoJudge(){
+  if(!queue.length){alert('엑셀을 먼저 업로드하세요.');return;}
+  const pending=queue.filter(q=>q.status2==='pending').length;
+  if(!pending){alert('대기 중인 학생이 없습니다.\n이미 모두 채점 완료된 상태입니다.');return;}
+  if(!confirm(`${pending}명을 순서대로 자동 채점합니다.\n채점 중 창을 닫거나 새로고침하지 마세요.\n\n시작할까요?`)){return;}
+  autoBatchMode=true;
   const fi=queue.findIndex(q=>q.status2==='pending');
   jQ(fi>=0?fi:0);showView('v3');
 }
@@ -758,6 +773,8 @@ async function runAI(hasVideo){
   try{
     // ── Phase 1: 영상 분석 ────────────────────────────────────
     const url=q.url||'';
+    // 음성전사를 Phase 1(프레임 추출)과 병렬로 미리 시작
+    const transcriptPromise = (localServerOk && url) ? extractTranscriptFromServer(url) : Promise.resolve(null);
 
     if(localServerOk && url){
       // ▶ 경로 A: 로컬 ffmpeg 서버 (고품질 Vision)
@@ -820,8 +837,9 @@ async function runAI(hasVideo){
       document.getElementById('durInfo').textContent=`실제 재생시간: 영상 미로드 (엑셀 값 ${q.duration||'-'} 사용)`;
     }
 
-    // ── 백그라운드: 음성전사 + 판서텍스트 (채점과 병렬 실행) ──
-    const transcriptPromise = (localServerOk && url) ? extractTranscriptFromServer(url) : Promise.resolve(null);
+    // ── 채점 전: 음성전사 완료 대기 (Phase 1 동안 병렬 완료) ──
+    const transcriptData = await transcriptPromise;
+    const transcriptText = (transcriptData?.full_text || '').trim();
     const boardTextPromise = visionUsed ? extractBoardText(capturedFrames, apiKey) : Promise.resolve(null);
 
     // ── Phase 2: 정량 채점 (개념·완성도) — 독립 2회 병렬 ─────
@@ -837,6 +855,7 @@ async function runAI(hasVideo){
 필수용어(${p.terms.length}개): ${p.terms.join(', ')}
 실제 발표시간: ${durFmt}
 팀명: ${q.teamName} / 캠퍼스: ${q.campus||''}
+${transcriptText?`\n음성 전사 텍스트 (용어 사용·정확성 체크에 활용):\n"""\n${transcriptText.slice(0,2000)}\n"""`:'\n※ 음성 전사 없음 — 영상·프레임 기반으로 채점'}
 
 [발표 목적 — 절대 전제]
 수학말하기대회는 풀이 과정 발표입니다. 개념 강의가 아닙니다.
@@ -1018,6 +1037,7 @@ JSON만 응답:
 문제(이미 주어진 조건): ${p.q}
 핵심 풀이 포인트: ${p.kp}
 발표시간: ${durFmt} / 팀명: ${q.teamName}
+${transcriptText?`\n음성 전사 텍스트 (예시 확인에 활용):\n"""\n${transcriptText.slice(0,2000)}\n"""`:'\n※ 음성 전사 없음'}
 
 [절대 전제 — 주어진 조건 보호]
 이 발표는 풀이 과정 발표입니다. 개념 강의가 아닙니다.
@@ -1082,11 +1102,14 @@ JSON만 응답:
     setProgress('✅ 채점 완료!',100);
 
     // 음성전사·판서텍스트 결과 렌더 (이미 완료됐으면 즉시, 아직이면 대기)
-    const [transcriptData, boardTextData] = await Promise.all([transcriptPromise, boardTextPromise]);
+    const boardTextData = await boardTextPromise;
     if(url) renderTranscript(transcriptData);
     if(visionUsed) renderBoardText(boardTextData, capturedFrames);
 
-    setTimeout(()=>{applyScoresToUI();showResult();},400);
+    setTimeout(()=>{
+      applyScoresToUI();showResult();
+      if(autoBatchMode){setTimeout(()=>saveNext(),1800);}
+    },400);
 
   }catch(err){
     if(err.message==='INVALID_KEY'){alert('API 키가 유효하지 않습니다.');showApiModal();}
@@ -1340,7 +1363,10 @@ function saveNext(){
   svTmp();updProg();
   const ni=queue.findIndex((q,i)=>i>curI&&q.status2==='pending');
   if(ni>=0){jQ(ni);}
-  else if(queue.every(q=>q.status2==='done')){alert(`🎉 전체 ${queue.length}건 채점 완료!\n[엑셀 저장] 버튼으로 결과를 다운로드하세요.`);showView('v2');}
+  else if(queue.every(q=>q.status2==='done')){
+    if(autoBatchMode){autoBatchMode=false;renderReview();showView('v2');}
+    else{alert(`🎉 전체 ${queue.length}건 채점 완료!\n[엑셀 저장] 버튼으로 결과를 다운로드하세요.`);showView('v2');}
+  }
   else{const fi=queue.findIndex(q=>q.status2==='pending');if(fi>=0)jQ(fi);}
 }
 
