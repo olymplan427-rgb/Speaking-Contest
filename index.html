@@ -129,6 +129,26 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
 .tboard-lbl{font-size:10px;font-weight:500;color:var(--ci);margin-bottom:3px}
 .tboard-text{background:var(--bs);border-radius:5px;padding:6px 9px;font-size:11px;line-height:1.7;color:var(--cp);border:.5px solid var(--bt);white-space:pre-wrap}
 .tstat{font-size:10px;color:var(--cs);padding:4px 7px;background:var(--bs);border-radius:5px;border:.5px solid var(--bt)}
+/* 문제 등록 페이지 */
+.pdw{max-width:860px;margin:0 auto;padding:20px 16px}
+.pd-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.pd-gr-tabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.pd-gr-tab{padding:6px 14px;border-radius:20px;border:.5px solid var(--b2);cursor:pointer;font-size:12px;font-weight:500;background:var(--bs);transition:all .15s;white-space:nowrap}
+.pd-gr-tab.on{background:var(--ci);color:white;border-color:var(--ci)}
+.pd-gr-tab .cnt{font-size:10px;opacity:.7;margin-left:3px}
+.prob-card{border:.5px solid var(--bt);border-radius:8px;padding:12px 14px;margin-bottom:8px;background:var(--bs)}
+.prob-card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.prob-num{background:var(--ci);color:white;border-radius:4px;font-size:11px;font-weight:700;padding:2px 8px;flex-shrink:0}
+.prob-detail{font-size:11px;color:var(--cs);line-height:1.7;display:grid;grid-template-columns:56px 1fr;gap:2px 8px}
+.prob-detail .lbl{font-weight:500;color:var(--ci)}
+.pf-row{margin-bottom:10px}
+.pf-row label{font-size:11px;font-weight:500;color:var(--cs);display:block;margin-bottom:3px}
+.pf-inp{width:100%;padding:7px 10px;border-radius:6px;border:.5px solid var(--b2);background:var(--bs);color:var(--cp);font-size:12px;font-family:inherit;box-sizing:border-box}
+.pf-inp:focus{outline:none;border-color:var(--ci)}
+.pd-empty{padding:32px;text-align:center;color:var(--cs);border:.5px dashed var(--b2);border-radius:8px;font-size:13px}
+.pd-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center}
+.pd-modal-box{background:var(--bg);border-radius:12px;padding:22px;width:min(580px,95vw);max-height:90vh;overflow-y:auto;border:.5px solid var(--bt)}
+.fmt-note{font-size:10px;color:var(--cs);line-height:1.7;background:var(--bs);border-radius:6px;padding:8px 10px;border:.5px solid var(--bt);margin-top:8px}
 </style>
 </head>
 <body>
@@ -163,8 +183,11 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
   </div>
   <div style="font-size:11px;color:var(--cs);text-align:center;line-height:1.8">
     AI 채점 사용 시 API 키가 필요합니다<br>
-    <button class="btn bsc" style="font-size:11px;margin-top:6px" onclick="showApiModal()">🔑 API 키 설정</button>
-    <span id="apiSt1" style="margin-left:8px;font-size:11px"></span>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap">
+      <button class="btn bsc" style="font-size:11px" onclick="showApiModal()">🔑 API 키 설정</button>
+      <span id="apiSt1" style="font-size:11px;align-self:center"></span>
+      <button class="btn bsc" style="font-size:11px" onclick="showPdMgr()">📚 문제 데이터 등록</button>
+    </div>
   </div>
 </div>
 <input type="file" id="xlIn" accept=".xlsx,.xls" style="display:none" onchange="parseXL(this)">
@@ -181,6 +204,7 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn bsc" style="font-size:11px" onclick="showView('v1')">← 다시 업로드</button>
       <button class="btn bsc" style="font-size:11px" onclick="showApiModal()">🔑 API키 <span id="apiSt2"></span></button>
+      <button class="btn bsc" style="font-size:11px" onclick="showPdMgr()">📚 문제 등록</button>
       <button class="btn bxl" style="font-size:11px" onclick="doXL()"><i class="ti ti-download"></i> 결과 엑셀</button>
     </div>
   </div>
@@ -192,6 +216,59 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
   <div style="display:flex;gap:8px;margin-top:12px">
     <button class="stbtn" style="flex:1;font-size:13px" onclick="startJudge()">▶ 한 명씩 심사</button>
     <button class="stbtn" style="flex:1;font-size:13px;background:#1d4ed8" onclick="startAutoJudge()">🤖 전체 자동 채점</button>
+  </div>
+</div>
+</div>
+
+<!-- VIEW 4: Problem Data Manager -->
+<div id="v4" class="view">
+<div class="pdw">
+  <div class="pd-header">
+    <button class="btn bsc" onclick="showView('v1')" style="font-size:11px;flex-shrink:0">← 돌아가기</button>
+    <div>
+      <div style="font-size:16px;font-weight:500">📚 문제 데이터 관리</div>
+      <div style="font-size:11px;color:var(--cs);margin-top:2px">학년별 문제·정답·핵심포인트·필수용어 등록 (AI 채점 기준 데이터)</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn bsc" style="font-size:11px" onclick="downloadPdSample()">📋 샘플 JSON</button>
+      <button class="btn bsc" style="font-size:11px" onclick="exportPdJSON()">💾 내보내기</button>
+      <label class="btn bpr" style="font-size:11px;cursor:pointer">📂 JSON 업로드<input type="file" id="pdJsonIn" accept=".json" style="display:none" onchange="uploadPdJSON(this)"></label>
+      <label class="btn bxl" style="font-size:11px;cursor:pointer">📊 엑셀 업로드<input type="file" id="pdXlIn" accept=".xlsx,.xls" style="display:none" onchange="uploadPdXL(this)"></label>
+    </div>
+  </div>
+
+  <!-- Excel format note -->
+  <div class="fmt-note" id="pdFmtNote" style="margin-bottom:12px">
+    <strong>엑셀 열 형식</strong> (첫 행 = 헤더): <code>학년</code> | <code>번호</code> | <code>문제제목</code> | <code>문제내용</code> | <code>정답</code> | <code>핵심풀이포인트</code> | <code>필수용어</code>(쉼표 구분)<br>
+    학년 값: 초등4 / 초등5 / 초등6 / 중1 / 중2 / 중3
+  </div>
+
+  <!-- Grade tabs -->
+  <div class="pd-gr-tabs" id="pdGradeTabs"></div>
+
+  <!-- Problem list -->
+  <div id="pdProbList"></div>
+
+  <!-- Add button -->
+  <button class="nxt green" id="pdAddBtn" onclick="showAddProbModal()" style="margin-top:4px">+ 문제 추가</button>
+</div>
+
+<!-- Add/Edit Problem Modal -->
+<div class="pd-modal-bg" id="pdModalBg" style="display:none">
+  <div class="pd-modal-box">
+    <div style="font-size:15px;font-weight:500;margin-bottom:14px" id="pdModalTitle">문제 추가</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">
+      <div class="pf-row"><label>번호</label><input class="pf-inp" id="pf-id" type="number" min="1" placeholder="1"></div>
+      <div class="pf-row"><label>문제 제목</label><input class="pf-inp" id="pf-title" placeholder="예: 3번 — 정비례와 반비례"></div>
+    </div>
+    <div class="pf-row"><label>문제 내용</label><textarea class="pf-inp" id="pf-q" rows="3" placeholder="문제 전문을 입력하세요"></textarea></div>
+    <div class="pf-row"><label>정답</label><input class="pf-inp" id="pf-ans" placeholder="예: A(3, -1)"></div>
+    <div class="pf-row"><label>핵심 풀이 포인트 (학생이 보여줘야 할 것)</label><textarea class="pf-inp" id="pf-kp" rows="2" placeholder="예: A(a,-a/3), B(a,-2a). |5a/3|=5 → a=3"></textarea></div>
+    <div class="pf-row"><label>필수용어 (쉼표로 구분)</label><input class="pf-inp" id="pf-terms" placeholder="예: 정비례, 비례상수, 좌표, 좌표평면"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn bsc" onclick="closePdModal()">취소</button>
+      <button class="btn bpr" onclick="saveProbModal()">저장</button>
+    </div>
   </div>
 </div>
 </div>
@@ -453,13 +530,16 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
 
 <script>
 // ── 문항 데이터 ──────────────────────────────────────────────
-const PD={'중1':[
+let PD={'중1':[
   {id:1,title:'1번 — 정수와 유리수',q:'절댓값이 x 이하인 정수의 개수가 101개일 때, 자연수 x에 대하여 옳은 것을 모두 고르시오.\n보기: ㄱ.짝수 ㄴ.5의 배수 ㄷ.약수 10개',ans:'ㄱ, ㄴ  (x=50)',kp:'2x+1=101 → x=50, 50=2×5²이므로 약수의 개수=6개',terms:['소수','합성수','거듭제곱','소인수','소인수분해','약수','약수의 개수','정수','양의 정수','음의 정수','절댓값','수직선','원점']},
   {id:2,title:'2번 — 문자와 식',q:'도형(5, 11, 3a-2, a+4)의 넓이를 a를 사용한 식으로 나타내시오.',ans:'21a+14',kp:'5(3a-2)+6(a+4)=15a-10+6a+24=21a+14',terms:['문자식','차수','다항식','일차식','동류항','분배법칙','계수','상수항']},
   {id:3,title:'3번 — 정비례와 반비례',q:'y=-1/3x 위의 점 A(제4사분면), y=-2x 위의 점 B, AB=5. 점 A의 좌표는?',ans:'A(3, -1)',kp:'A(a,-a/3), B(a,-2a). |5a/3|=5 → a=3',terms:['정비례','비례상수','좌표','좌표평면','사분면','x축','y축','원점','반비례']},
   {id:4,title:'4번 — 기본 도형',q:'네 직선이 한 점에서 만남. ∠AOH가 ∠DOB보다 34° 클 때 ∠COB는?',ans:'∠COB = 152°',kp:'∠DOB=x → 4x=112° → x=28°, ∠COB=180°-28°=152°',terms:['각','반직선','평각','직각','예각','둔각','교각','맞꼭지각']},
   {id:5,title:'5번 — 다각형',q:'도형에서 ∠a+∠b+∠c+∠d+∠e+∠f의 크기는? (62° 포함)',ans:'478°',kp:'오각형 내각의 합=540°, 540°-62°=478°',terms:['다각형','변','꼭짓점','내각','외각','삼각형의 내각','삼각형의 외각','다각형의 내각의 합','대각선']}
 ]};
+
+// localStorage에 저장된 문제 데이터 불러오기 (없으면 기본값 유지)
+(function(){try{const s=localStorage.getItem('mathJudgePD');if(s){const d=JSON.parse(s);if(d&&typeof d==='object')Object.assign(PD,d);}}catch(e){}})();
 
 const HMAP={'접수일':'date','신청일':'date','브랜드':'brand','캠퍼스':'campus','캠퍼스명':'campus','학년':'grade','팀명':'teamName','팀원':'members','발표 문제':'problem','발표문제':'problem','발표 문항':'problem','발표문항':'problem','대표 문항':'problem','대표문항':'problem','영상주소':'url','영상 주소':'url','영상url':'url','영상시간':'duration','영상 시간':'duration','발표시간':'duration','좋아요 수':'likes','좋아요수':'likes','접수상태':'status','심사상태':'status'};
 
@@ -503,9 +583,9 @@ async function extractFramesFromServer(url, durationSec){
 
 // ── 뷰 전환 ───────────────────────────────────────────────────
 function showView(id){
-  ['v1','v2','v3'].forEach(v=>{const el=document.getElementById(v);el.classList.remove('on');el.style.display='none';});
-  const el=document.getElementById(id);el.style.display='';el.classList.add('on');
-  if(id==='v2')renderReview();if(id==='v1')updApiSt();
+  ['v1','v2','v3','v4'].forEach(v=>{const el=document.getElementById(v);if(el){el.classList.remove('on');el.style.display='none';}});
+  const el=document.getElementById(id);if(el){el.style.display='';el.classList.add('on');}
+  if(id==='v2')renderReview();if(id==='v1')updApiSt();if(id==='v4')renderPdMgr();
 }
 function showApiModal(){document.getElementById('apiModal').classList.add('on');document.getElementById('apiKeyInp').value=localStorage.getItem('apiKey')||'';}
 function closeApiModal(){document.getElementById('apiModal').classList.remove('on');}
@@ -553,6 +633,160 @@ function renderReview(){
   document.getElementById('revList').innerHTML=queue.slice(0,100).map((q,i)=>`<div class="rr" onclick="jQ(${i});showView('v3')" style="${q.status2==='done'?'color:var(--cg)':''}"><div style="color:var(--cs)">${q.id}</div><div><strong>${q.teamName}</strong>${q.members&&q.members!==q.teamName?' <span style="font-size:10px;opacity:.7">/ '+q.members+'</span>':''}</div><div style="font-size:11px;color:var(--cs)">${q.campus}</div><div style="text-align:center"><span style="padding:1px 6px;border-radius:20px;background:var(--bi);color:var(--ci);font-size:10px">${q.problem}번</span></div><div style="text-align:center;font-size:11px">${q.duration||'-'}</div><div style="text-align:center;font-size:10px">${q.status2==='done'?'✅완료':'<span style="color:var(--cs)">대기</span>'}</div></div>`).join('')+(queue.length>100?`<div style="padding:8px;text-align:center;font-size:11px;color:var(--cs)">+ ${queue.length-100}건 더 있음</div>`:'');
 }
 
+// ── 문제 데이터 관리 ─────────────────────────────────────────
+const PD_GRADES=['초등4','초등5','초등6','중1','중2','중3'];
+let _pdGr='중1'; // 현재 선택 학년
+
+function showPdMgr(){showView('v4');}
+
+function savePD(){try{localStorage.setItem('mathJudgePD',JSON.stringify(PD));}catch(e){}}
+
+function renderPdMgr(){
+  // 학년 탭
+  const tabEl=document.getElementById('pdGradeTabs');
+  if(!tabEl)return;
+  tabEl.innerHTML=PD_GRADES.map(g=>{
+    const cnt=(PD[g]||[]).length;
+    return `<button class="pd-gr-tab${g===_pdGr?' on':''}" onclick="_pdGr='${g}';renderPdMgr()">
+      ${g}<span class="cnt">(${cnt})</span>
+    </button>`;
+  }).join('');
+
+  // 문제 목록
+  const listEl=document.getElementById('pdProbList');
+  const probs=PD[_pdGr]||[];
+  if(!probs.length){
+    listEl.innerHTML='<div class="pd-empty">등록된 문제가 없습니다.<br>+ 문제 추가 또는 JSON/엑셀 업로드로 등록하세요.</div>';
+  } else {
+    listEl.innerHTML=probs.map((p,i)=>`
+      <div class="prob-card">
+        <div class="prob-card-head">
+          <span class="prob-num">${p.id||i+1}번</span>
+          <span style="font-size:13px;font-weight:500;flex:1">${escHtml(p.title||'제목 없음')}</span>
+          <button class="btn bsc" style="font-size:10px;padding:3px 8px" onclick="editProbModal(${i})">수정</button>
+          <button class="btn" style="font-size:10px;padding:3px 8px;background:#fee2e2;color:#991b1b;border-color:#fca5a5" onclick="deleteProb(${i})">삭제</button>
+        </div>
+        <div class="prob-detail">
+          <span class="lbl">문제</span><span>${escHtml(p.q||'')}</span>
+          <span class="lbl">정답</span><span>${escHtml(p.ans||'')}</span>
+          <span class="lbl">핵심</span><span>${escHtml(p.kp||'')}</span>
+          <span class="lbl">용어</span><span>${(p.terms||[]).map(t=>`<span style="display:inline-block;background:var(--bi);color:var(--ci);border-radius:3px;font-size:10px;padding:1px 5px;margin:1px">${escHtml(t)}</span>`).join('')}</span>
+        </div>
+      </div>`).join('');
+  }
+}
+
+function deleteProb(i){
+  if(!confirm('이 문제를 삭제할까요?'))return;
+  (PD[_pdGr]=PD[_pdGr]||[]).splice(i,1);
+  savePD();renderPdMgr();
+}
+
+let _editIdx=-1;
+function showAddProbModal(){
+  _editIdx=-1;
+  document.getElementById('pdModalTitle').textContent=`${_pdGr} — 문제 추가`;
+  ['pf-id','pf-title','pf-q','pf-ans','pf-kp','pf-terms'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pdModalBg').style.display='flex';
+}
+function editProbModal(i){
+  _editIdx=i;
+  const p=(PD[_pdGr]||[])[i]||{};
+  document.getElementById('pdModalTitle').textContent=`${_pdGr} — ${p.title||'문제'} 수정`;
+  document.getElementById('pf-id').value=p.id||i+1;
+  document.getElementById('pf-title').value=p.title||'';
+  document.getElementById('pf-q').value=p.q||'';
+  document.getElementById('pf-ans').value=p.ans||'';
+  document.getElementById('pf-kp').value=p.kp||'';
+  document.getElementById('pf-terms').value=(p.terms||[]).join(', ');
+  document.getElementById('pdModalBg').style.display='flex';
+}
+function closePdModal(){document.getElementById('pdModalBg').style.display='none';}
+function saveProbModal(){
+  const id=parseInt(document.getElementById('pf-id').value)||1;
+  const title=document.getElementById('pf-title').value.trim();
+  const q=document.getElementById('pf-q').value.trim();
+  const ans=document.getElementById('pf-ans').value.trim();
+  const kp=document.getElementById('pf-kp').value.trim();
+  const terms=document.getElementById('pf-terms').value.split(',').map(t=>t.trim()).filter(Boolean);
+  if(!title||!q){alert('문제 제목과 내용을 입력하세요.');return;}
+  if(!PD[_pdGr])PD[_pdGr]=[];
+  const obj={id,title,q,ans,kp,terms};
+  if(_editIdx>=0)PD[_pdGr][_editIdx]=obj;
+  else PD[_pdGr].push(obj);
+  PD[_pdGr].sort((a,b)=>(a.id||0)-(b.id||0));
+  savePD();closePdModal();renderPdMgr();
+}
+
+function uploadPdJSON(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      if(typeof d!=='object'||Array.isArray(d))throw new Error('형식 오류');
+      let cnt=0;
+      PD_GRADES.forEach(g=>{if(d[g]&&Array.isArray(d[g])){PD[g]=d[g];cnt+=d[g].length;}});
+      savePD();renderPdMgr();
+      alert(`✅ JSON 불러오기 완료! ${cnt}개 문제 등록됨`);
+    }catch(err){alert('JSON 파싱 실패: '+err.message);}
+  };
+  r.readAsText(f);
+  inp.value='';
+}
+
+function uploadPdXL(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      const newData={};
+      rows.forEach(row=>{
+        const g=String(row['학년']||'').trim();
+        if(!PD_GRADES.includes(g))return;
+        if(!newData[g])newData[g]=[];
+        const terms=String(row['필수용어']||'').split(',').map(t=>t.trim()).filter(Boolean);
+        newData[g].push({
+          id:parseInt(row['번호'])||newData[g].length+1,
+          title:String(row['문제제목']||'').trim(),
+          q:String(row['문제내용']||'').trim(),
+          ans:String(row['정답']||'').trim(),
+          kp:String(row['핵심풀이포인트']||'').trim(),
+          terms
+        });
+      });
+      let cnt=0;
+      Object.entries(newData).forEach(([g,arr])=>{PD[g]=arr;cnt+=arr.length;});
+      savePD();renderPdMgr();
+      alert(`✅ 엑셀 불러오기 완료! ${cnt}개 문제 등록됨`);
+    }catch(err){alert('엑셀 파싱 실패: '+err.message);}
+  };
+  r.readAsArrayBuffer(f);
+  inp.value='';
+}
+
+function exportPdJSON(){
+  const blob=new Blob([JSON.stringify(PD,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='문제데이터.json';a.click();
+}
+
+function downloadPdSample(){
+  const sample={
+    '중1':[
+      {id:1,title:'1번 — 정수와 유리수',q:'절댓값이 x 이하인 정수의 개수가 101개일 때, 자연수 x에 대하여 옳은 것을 모두 고르시오.',ans:'ㄱ, ㄴ (x=50)',kp:'2x+1=101 → x=50, 50=2×5²이므로 약수의 개수=6개',terms:['소수','합성수','절댓값','정수','약수']},
+      {id:2,title:'2번 — 문자와 식',q:'도형(5, 11, 3a-2, a+4)의 넓이를 a를 사용한 식으로 나타내시오.',ans:'21a+14',kp:'5(3a-2)+6(a+4)=15a-10+6a+24=21a+14',terms:['문자식','다항식','일차식','동류항','분배법칙']}
+    ],
+    '중2':[
+      {id:1,title:'1번 — 예시 문제',q:'여기에 문제를 입력하세요.',ans:'정답',kp:'핵심 풀이 포인트',terms:['필수용어1','필수용어2']}
+    ]
+  };
+  const blob=new Blob([JSON.stringify(sample,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='문제데이터_샘플.json';a.click();
+}
+
 function startJudge(){
   if(!queue.length){alert('엑셀을 먼저 업로드하세요.');return;}
   autoBatchMode=false;
@@ -577,7 +811,7 @@ function jQ(i){
   document.getElementById('vUrl').value=q.url||'';
   document.getElementById('jTeam').textContent=`${q.teamName}${q.members&&q.members!==q.teamName?' / '+q.members:''}`;
   document.getElementById('jInfo').textContent=`${q.brand||''} ${q.campus||''} · ${q.grade||''} · ${q.problem}번 · ${q.duration||'-'} · ${q.type}`;
-  cGr=q.grade&&q.grade.includes('중1')?'중1':'중1';cPr=q.problem;
+  cGr=q.grade||'중1';cPr=q.problem;
   loadProb(cGr,cPr);
   resetVid();
   document.getElementById('capStatus').style.display='none';
