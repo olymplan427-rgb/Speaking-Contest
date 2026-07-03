@@ -414,6 +414,7 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
       <div class="scard">
         <div class="scardh" style="background:var(--bi)">
           <span>🏆 최종 결과</span>
+          <span id="reliabBadge" style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:3px;margin-left:8px;display:none"></span>
           <span style="font-size:11px;font-weight:600;color:var(--ci);margin-left:auto" id="totAll">-/100</span>
         </div>
         <div class="scardb">
@@ -823,8 +824,8 @@ async function runAI(hasVideo){
     const transcriptPromise = (localServerOk && url) ? extractTranscriptFromServer(url) : Promise.resolve(null);
     const boardTextPromise = visionUsed ? extractBoardText(capturedFrames, apiKey) : Promise.resolve(null);
 
-    // ── Phase 2: 정량 채점 (개념·완성도) ─────────────────────
-    setProgress('📊 개념·완성도 AI 채점 중...', 35);
+    // ── Phase 2: 정량 채점 (개념·완성도) — 독립 2회 병렬 ─────
+    setProgress('📊 개념·완성도 AI 채점 중... (2회 독립 병렬)', 35);
     const durFmt=detectedDuration?fmt(detectedDuration):(q.duration||'정보없음');
     const pr1=`당신은 수학말하기대회 전문 심사위원입니다. 아래 기준표에 따라 정량 채점하세요.
 
@@ -912,13 +913,14 @@ async function runAI(hasVideo){
 JSON만 응답:
 {"개념선정":숫자,"용어정리":숫자,"정확성":숫자,"논리성":숫자,"개념사유":"2~3문장","완성도사유":"2~3문장"}`;
 
-    const r1=await callTextAI(pr1);
-    SC.concept=clamp(r1.개념선정??8);SC.term=clamp(r1.용어정리??8);
-    SC.acc=clamp(r1.정확성??8);SC.logic=clamp(r1.논리성??7);
-    aiReasons.r1=r1.개념사유||'';aiReasons.r2=r1.완성도사유||'';
+    const [r1a,r1b]=await Promise.all([callTextAI(pr1),callTextAI(pr1)]);
+    const r1m=avgTwo(r1a,r1b,['개념선정','용어정리','정확성','논리성']);
+    SC.concept=clamp(r1m.개념선정??8);SC.term=clamp(r1m.용어정리??8);
+    SC.acc=clamp(r1m.정확성??8);SC.logic=clamp(r1m.논리성??7);
+    aiReasons.r1=r1a.개념사유||'';aiReasons.r2=r1a.완성도사유||'';
 
-    // ── Phase 3: 전달력 (Vision 또는 텍스트) ─────────────────
-    setProgress(visionUsed?'📸 판서·발표 영상 직접 분석 중...':'✍️ 전달력 AI 추정 채점 중...', 60);
+    // ── Phase 3: 전달력 (Vision 또는 텍스트) — 독립 2회 병렬 ─
+    setProgress(visionUsed?'📸 판서·발표 영상 직접 분석 중... (2회 독립 병렬)':'✍️ 전달력 AI 추정 채점 중... (2회 독립 병렬)', 60);
 
     if(visionUsed && capturedFrames.some(Boolean)){
       const pr2=`당신은 수학말하기대회 판서 심사위원입니다. 첨부된 3구간 영상 캡처(도입부·전개부·마무리)를 분석하여 아래 기준표에 따라 채점하세요.
@@ -964,9 +966,10 @@ JSON만 응답:
 
 JSON만 응답:
 {"판서이유":"이미지 관찰 기반 2문장","판서":숫자,"말하기이유":"이미지 관찰 기반 2문장","말하기":숫자}`;
-      const r2=await callVisionAI(pr2, capturedFrames);
-      SC.board=clamp(r2.판서??6);SC.speak=clamp(r2.말하기??6);
-      aiReasons.r3=`[판서] ${r2.판서이유||''}\n[말하기] ${r2.말하기이유||''}`;
+      const [r2a,r2b]=await Promise.all([callVisionAI(pr2,capturedFrames),callVisionAI(pr2,capturedFrames)]);
+      const r2m=avgTwo(r2a,r2b,['판서','말하기']);
+      SC.board=clamp(r2m.판서??6);SC.speak=clamp(r2m.말하기??6);
+      aiReasons.r3=`[판서] ${r2a.판서이유||''}\n[말하기] ${r2a.말하기이유||''}`;
     }else{
       const pr2=`당신은 수학말하기대회 판서 심사위원입니다. 영상 캡처 불가로 텍스트 정보 기반 추정 채점합니다.
 
@@ -1000,13 +1003,14 @@ JSON만 응답:
 
 JSON만 응답:
 {"판서이유":"형식에 맞춘 2문장","판서":숫자,"말하기이유":"형식에 맞춘 2문장","말하기":숫자}`;
-      const r2=await callTextAI(pr2);
-      SC.board=clamp(r2.판서??6);SC.speak=clamp(r2.말하기??6);
-      aiReasons.r3=`[판서] ${r2.판서이유||''}\n[말하기] ${r2.말하기이유||''}\n\n※ 영상 캡처 불가 — 텍스트 추정 채점 (심사위원이 영상 직접 확인 후 슬라이더 조정 권장)`;
+      const [r2a,r2b]=await Promise.all([callTextAI(pr2),callTextAI(pr2)]);
+      const r2m=avgTwo(r2a,r2b,['판서','말하기']);
+      SC.board=clamp(r2m.판서??6);SC.speak=clamp(r2m.말하기??6);
+      aiReasons.r3=`[판서] ${r2a.판서이유||''}\n[말하기] ${r2a.말하기이유||''}\n\n※ 영상 캡처 불가 — 텍스트 추정 채점 (심사위원이 영상 직접 확인 후 슬라이더 조정 권장)`;
     }
 
-    // ── Phase 4: 창의성 ───────────────────────────────────────
-    setProgress('🤖 AI 창의성 페르소나 채점 중...', 80);
+    // ── Phase 4: 창의성 — 독립 2회 병렬 ─────────────────────
+    setProgress('🤖 AI 창의성 페르소나 채점 중... (2회 독립 병렬)', 80);
     const pr3=`당신은 수학말하기대회 AI 심사위원단(3인 페르소나)입니다. 아래 기준표에 따라 채점하세요.
 
 [발표 정보]
@@ -1061,9 +1065,19 @@ JSON만 응답:
 
 JSON만 응답:
 {"예시":숫자,"흥미유발":숫자,"또래이해":숫자,"수학교사피드백":"2~3문장","또래학생피드백":"2~3문장","발표코치피드백":"창의적 표현과 발표 스타일 2~3문장"}`;
-    const r3=await callTextAI(pr3);
-    SC.ex=clamp(r3.예시??7);SC.eng=clamp(r3.흥미유발??7);SC.peer=clamp(r3.또래이해??7);
-    aiReasons.fb1=r3.수학교사피드백||'';aiReasons.fb2=r3.또래학생피드백||'';aiReasons.fb3=r3.발표코치피드백||'';
+    const [r3a,r3b]=await Promise.all([callTextAI(pr3),callTextAI(pr3)]);
+    const r3m=avgTwo(r3a,r3b,['예시','흥미유발','또래이해']);
+    SC.ex=clamp(r3m.예시??7);SC.eng=clamp(r3m.흥미유발??7);SC.peer=clamp(r3m.또래이해??7);
+    aiReasons.fb1=r3a.수학교사피드백||'';aiReasons.fb2=r3a.또래학생피드백||'';aiReasons.fb3=r3a.발표코치피드백||'';
+
+    // ── 신뢰도 계산 (1차·2차 채점 총점 편차) ─────────────────
+    const _tot1=(r1a.개념선정??8)+(r1a.용어정리??8)+(r1a.정확성??8)+(r1a.논리성??7)
+              +(r2a.판서??6)+(r2a.말하기??6)
+              +(r3a.예시??7)+(r3a.흥미유발??7)+(r3a.또래이해??7);
+    const _tot2=(r1b.개념선정??8)+(r1b.용어정리??8)+(r1b.정확성??8)+(r1b.논리성??7)
+              +(r2b.판서??6)+(r2b.말하기??6)
+              +(r3b.예시??7)+(r3b.흥미유발??7)+(r3b.또래이해??7);
+    showReliabBadge(Math.abs(_tot1-_tot2));
 
     setProgress('✅ 채점 완료!',100);
 
@@ -1080,6 +1094,27 @@ JSON만 응답:
     else{alert('AI 채점 오류: '+err.message);}
     showEmpty();
   }
+}
+
+// ── 2회 채점 평균화 헬퍼 ────────────────────────────────────
+function avgTwo(a, b, keys){
+  const out={};
+  keys.forEach(k=>{
+    const va=typeof a[k]==='number'?a[k]:null;
+    const vb=typeof b[k]==='number'?b[k]:null;
+    if(va!==null&&vb!==null) out[k]=Math.round((va+vb)/2);
+    else out[k]=va??vb??null;
+  });
+  return out;
+}
+
+function showReliabBadge(diff){
+  const el=document.getElementById('reliabBadge');
+  if(!el)return;
+  el.style.display='inline';
+  if(diff<=5){el.textContent=`신뢰도 높음 (±${diff}점)`;el.style.background='#DCFCE7';el.style.color='#14532D';}
+  else if(diff<=10){el.textContent=`신뢰도 보통 (±${diff}점)`;el.style.background='#FEF9C3';el.style.color='#92400E';}
+  else{el.textContent=`신뢰도 낮음 (±${diff}점 — 검토 권장)`;el.style.background='#FEE2E2';el.style.color='#991B1B';}
 }
 
 // ── 시간 채점 (실제 감지 시간 기반) ─────────────────────────
