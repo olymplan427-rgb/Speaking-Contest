@@ -34,12 +34,13 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
 .sb{padding:10px 12px;border-radius:8px;border:.5px solid var(--bt);background:var(--bp);text-align:center}
 .sbn{font-size:24px;font-weight:500;color:var(--ci)}.sbl{font-size:10px;color:var(--cs);margin-top:2px}
 .rtb{border:.5px solid var(--bt);border-radius:8px;overflow:hidden}
-.rth{display:grid;grid-template-columns:36px 1fr 1fr 60px 60px 50px;background:var(--bs);border-bottom:.5px solid var(--bt);font-size:11px;font-weight:500}
+.rth{display:grid;grid-template-columns:36px 1fr 90px 52px 52px 52px 64px 54px;background:var(--bs);border-bottom:.5px solid var(--bt);font-size:11px;font-weight:500}
 .rth div,.rr div{padding:6px 8px}
-.rr{display:grid;grid-template-columns:36px 1fr 1fr 60px 60px 50px;border-bottom:.5px solid var(--bt);font-size:11px;cursor:pointer;transition:background .1s}
+.rr{display:grid;grid-template-columns:36px 1fr 90px 52px 52px 52px 64px 54px;border-bottom:.5px solid var(--bt);font-size:11px;cursor:pointer;transition:background .1s}
 .rr:last-child{border-bottom:none}.rr:hover{background:var(--bs)}
 .rtbd{max-height:260px;overflow-y:auto}
 .stbtn{padding:14px 0;background:#1d6f42;color:white;border:none;cursor:pointer;border-radius:9px;font-size:15px;font-weight:500;width:100%;transition:background .15s}.stbtn:hover{background:#155131}
+.sort-btn{padding:3px 9px;border-radius:20px;border:.5px solid var(--b2);background:var(--bs);font-size:10px;cursor:pointer;font-family:inherit;color:var(--cp);transition:all .15s}.sort-btn:hover{background:var(--bt)}.sort-btn.on{background:var(--ci);color:white;border-color:var(--ci)}
 /* Judge layout */
 #v3.on{overflow:hidden}
 .jl{display:grid;grid-template-columns:290px 1fr;height:100vh;overflow:hidden}
@@ -210,7 +211,14 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
   </div>
   <div class="sg" id="statGrid"></div>
   <div class="rtb">
-    <div class="rth"><div>#</div><div>팀명 / 팀원</div><div>캠퍼스</div><div style="text-align:center">문항</div><div style="text-align:center">시간</div><div style="text-align:center">상태</div></div>
+    <div style="display:flex;align-items:center;gap:5px;padding:6px 8px;background:var(--bs);border-bottom:.5px solid var(--bt);flex-wrap:wrap">
+      <span style="font-size:10px;color:var(--cs);flex-shrink:0">정렬:</span>
+      <button class="sort-btn" id="sb-접수순" onclick="setRevSort('접수순')">접수순</button>
+      <button class="sort-btn" id="sb-학년순" onclick="setRevSort('학년순')">학년순</button>
+      <button class="sort-btn" id="sb-점수↑" onclick="setRevSort('점수↑')">점수 낮은순</button>
+      <button class="sort-btn" id="sb-점수↓" onclick="setRevSort('점수↓')">점수 높은순</button>
+    </div>
+    <div class="rth"><div>#</div><div>팀명 / 팀원</div><div>캠퍼스</div><div style="text-align:center">학년</div><div style="text-align:center">문항</div><div style="text-align:center">시간</div><div style="text-align:center">점수</div><div style="text-align:center">상태</div></div>
     <div class="rtbd" id="revList"></div>
   </div>
   <div style="display:flex;gap:8px;margin-top:12px">
@@ -622,15 +630,55 @@ function timeToSec(t){if(!t)return 0;const p=String(t).split(':').map(Number);re
 function fmt(s){return`${Math.floor(s/60)}:${String(Math.round(s%60)).padStart(2,'0')}`}
 
 // ── 목록 렌더 ─────────────────────────────────────────────────
+const GR_ORDER=['초등4','초등5','초등6','중1','중2','중3'];
+let revSort='접수순';
+
+function setRevSort(s){revSort=s;renderReview();}
+
 function renderReview(){
   const tot=queue.length;
   if(!tot){document.getElementById('statGrid').innerHTML='';document.getElementById('revList').innerHTML='<div style="padding:20px;text-align:center;color:var(--cs)">업로드된 데이터가 없습니다.</div>';return;}
+
+  // 통계
   const grades={},probs={};
   queue.forEach(q=>{grades[q.grade]=(grades[q.grade]||0)+1;probs[q.problem+'번']=(probs[q.problem+'번']||0)+1;});
   const topGr=Object.entries(grades).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k,v])=>`${k} ${v}명`).join(', ');
   const topPr=Object.entries(probs).sort((a,b)=>parseInt(a)-parseInt(b)).map(([k,v])=>`${k}(${v}명)`).join(' ');
-  document.getElementById('statGrid').innerHTML=`<div class="sb"><div class="sbn">${tot}</div><div class="sbl">전체 접수</div></div><div class="sb"><div class="sbn" style="color:var(--cg)">${queue.filter(q=>q.status2==='done').length}</div><div class="sbl">채점 완료</div></div><div class="sb"><div class="sbn" style="font-size:14px;margin-top:4px">${topGr||'-'}</div><div class="sbl">학년 분포</div></div><div class="sb"><div class="sbn" style="font-size:12px;margin-top:6px">${topPr||'-'}</div><div class="sbl">문항 분포</div></div>`;
-  document.getElementById('revList').innerHTML=queue.slice(0,100).map((q,i)=>`<div class="rr" onclick="jQ(${i});showView('v3')" style="${q.status2==='done'?'color:var(--cg)':''}"><div style="color:var(--cs)">${q.id}</div><div><strong>${q.teamName}</strong>${q.members&&q.members!==q.teamName?' <span style="font-size:10px;opacity:.7">/ '+q.members+'</span>':''}</div><div style="font-size:11px;color:var(--cs)">${q.campus}</div><div style="text-align:center"><span style="padding:1px 6px;border-radius:20px;background:var(--bi);color:var(--ci);font-size:10px">${q.problem}번</span></div><div style="text-align:center;font-size:11px">${q.duration||'-'}</div><div style="text-align:center;font-size:10px">${q.status2==='done'?'✅완료':'<span style="color:var(--cs)">대기</span>'}</div></div>`).join('')+(queue.length>100?`<div style="padding:8px;text-align:center;font-size:11px;color:var(--cs)">+ ${queue.length-100}건 더 있음</div>`:'');
+  const doneCnt=queue.filter(q=>q.status2==='done').length;
+  document.getElementById('statGrid').innerHTML=`<div class="sb"><div class="sbn">${tot}</div><div class="sbl">전체 접수</div></div><div class="sb"><div class="sbn" style="color:var(--cg)">${doneCnt}</div><div class="sbl">채점 완료</div></div><div class="sb"><div class="sbn" style="font-size:14px;margin-top:4px">${topGr||'-'}</div><div class="sbl">학년 분포</div></div><div class="sb"><div class="sbn" style="font-size:12px;margin-top:6px">${topPr||'-'}</div><div class="sbl">문항 분포</div></div>`;
+
+  // 정렬 버튼 활성화
+  ['접수순','학년순','점수↑','점수↓'].forEach(s=>{
+    const el=document.getElementById('sb-'+s);if(el)el.classList.toggle('on',revSort===s);
+  });
+
+  // 정렬 적용
+  const score=q=>q.result?.totals?.총점??-1;
+  const grIdx=q=>GR_ORDER.indexOf(q.grade)>=0?GR_ORDER.indexOf(q.grade):99;
+  const indexed=queue.map((q,i)=>({q,i}));
+  if(revSort==='학년순') indexed.sort((a,b)=>grIdx(a.q)-grIdx(b.q)||a.q.problem-b.q.problem||a.i-b.i);
+  else if(revSort==='점수↓') indexed.sort((a,b)=>score(b.q)-score(a.q));
+  else if(revSort==='점수↑') indexed.sort((a,b)=>score(a.q)-score(b.q));
+  // 접수순: 원래 순서 유지
+
+  const rows=indexed.slice(0,150).map(({q,i})=>{
+    const tot=q.result?.totals?.총점;
+    const scoreCell=q.status2==='done'
+      ?`<span style="font-weight:600;color:var(--cg)">${tot??'-'}</span>`
+      :`<span style="color:var(--cs)">-</span>`;
+    const grColor=q.grade?.includes('초등')?'#0e7490':'var(--ci)';
+    return `<div class="rr" onclick="jQ(${i});showView('v3')" style="${q.status2==='done'?'color:var(--cg)':''}">
+      <div style="color:var(--cs)">${q.id}</div>
+      <div><strong>${q.teamName}</strong>${q.members&&q.members!==q.teamName?` <span style="font-size:10px;opacity:.7">/ ${q.members}</span>`:''}</div>
+      <div style="font-size:11px;color:var(--cs)">${q.campus}</div>
+      <div style="text-align:center"><span style="padding:1px 5px;border-radius:3px;background:${grColor}22;color:${grColor};font-size:10px;font-weight:500">${q.grade||'-'}</span></div>
+      <div style="text-align:center"><span style="padding:1px 5px;border-radius:20px;background:var(--bi);color:var(--ci);font-size:10px">${q.problem}번</span></div>
+      <div style="text-align:center;font-size:11px">${q.duration||'-'}</div>
+      <div style="text-align:center;font-size:11px">${scoreCell}</div>
+      <div style="text-align:center;font-size:10px">${q.status2==='done'?'✅완료':'<span style="color:var(--cs)">대기</span>'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('revList').innerHTML=rows+(indexed.length>150?`<div style="padding:8px;text-align:center;font-size:11px;color:var(--cs)">+ ${indexed.length-150}건 더 있음</div>`:'');
 }
 
 // ── 문제 데이터 관리 ─────────────────────────────────────────
