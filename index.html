@@ -133,6 +133,17 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
 .tstat{font-size:10px;color:var(--cs);padding:4px 7px;background:var(--bs);border-radius:5px;border:.5px solid var(--bt)}
 /* 문제 등록 페이지 */
 .pdw{max-width:860px;margin:0 auto;padding:20px 16px}
+#v4{position:relative}
+.pd-drop-overlay{display:none;position:fixed;inset:0;z-index:150;background:rgba(99,102,241,.15);border:3px dashed #6366f1;border-radius:12px;pointer-events:none;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+.pd-drop-overlay.show{display:flex}
+.pd-drop-inner{font-size:52px;line-height:1}
+.pd-drop-label{font-size:18px;font-weight:600;color:#4f46e5}
+.pd-drop-sub{font-size:13px;color:#6366f1}
+.pd-dropzone{border:2px dashed var(--b2);border-radius:10px;padding:28px;text-align:center;color:var(--cs);cursor:pointer;transition:all .2s;margin-bottom:14px}
+.pd-dropzone:hover,.pd-dropzone.drag-on{border-color:#6366f1;background:#ede9fe22;color:#4f46e5}
+.pd-dropzone .drop-icon{font-size:36px;margin-bottom:6px}
+.pd-dropzone .drop-txt{font-size:13px;font-weight:500}
+.pd-dropzone .drop-sub{font-size:11px;margin-top:3px;opacity:.7}
 .pd-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;flex-wrap:wrap}
 .pd-gr-tabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
 .pd-gr-tab{padding:6px 14px;border-radius:20px;border:.5px solid var(--b2);cursor:pointer;font-size:12px;font-weight:500;background:var(--bs);transition:all .15s;white-space:nowrap}
@@ -246,18 +257,22 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
     </div>
   </div>
 
-  <!-- PDF parse status -->
-  <div id="pdPdfStatus" style="display:none;margin-bottom:12px;padding:14px 16px;border-radius:8px;background:var(--bi);border:.5px solid var(--bic)">
-    <div style="font-size:12px;font-weight:500;color:var(--ci)" id="pdPdfMsg">📄 PDF 분석 중...</div>
-    <div class="prog-bar" style="margin-top:8px"><div class="prog-fill" id="pdPdfProg" style="width:0%"></div></div>
-    <div style="font-size:10px;color:var(--cs);margin-top:5px" id="pdPdfSub"></div>
+  <!-- 드래그 오버레이 -->
+  <div class="pd-drop-overlay" id="pdDropOverlay">
+    <div class="pd-drop-inner">📄</div>
+    <div class="pd-drop-label">PDF 파일을 여기에 놓으세요</div>
+    <div class="pd-drop-sub">학년별 PDF 여러 개를 한꺼번에 드롭 가능</div>
   </div>
 
-  <!-- Excel format note -->
-  <div class="fmt-note" id="pdFmtNote" style="margin-bottom:12px">
-    <strong>📄 PDF 업로드</strong> — 문제, 정답, 핵심포인트, 필수용어가 포함된 PDF를 올리면 AI가 자동으로 학년별 문제 데이터를 추출합니다.<br>
-    <strong>엑셀 열 형식</strong>: <code>학년</code> | <code>번호</code> | <code>문제제목</code> | <code>문제내용</code> | <code>정답</code> | <code>핵심풀이포인트</code> | <code>필수용어</code>(쉼표 구분)
+  <!-- 드롭존 -->
+  <div class="pd-dropzone" id="pdDropZone" onclick="document.getElementById('pdPdfIn').click()">
+    <div class="drop-icon">📂</div>
+    <div class="drop-txt">PDF 파일을 여기에 드래그하거나 클릭해서 선택</div>
+    <div class="drop-sub">학년별 PDF 여러 개 동시 업로드 가능 · AI가 학년·문제·정답·필수용어 자동 추출</div>
   </div>
+
+  <!-- 파일별 진행 상태 -->
+  <div id="pdPdfQueue" style="margin-bottom:10px"></div>
 
   <!-- Grade tabs -->
   <div class="pd-gr-tabs" id="pdGradeTabs"></div>
@@ -697,7 +712,9 @@ function showPdMgr(){showView('v4');}
 
 function savePD(){try{localStorage.setItem('mathJudgePD',JSON.stringify(PD));}catch(e){}}
 
+let _pdDropInit=false;
 function renderPdMgr(){
+  if(!_pdDropInit){_pdDropInit=true;initPdDropZone();}
   // 학년 탭
   const tabEl=document.getElementById('pdGradeTabs');
   if(!tabEl)return;
@@ -829,36 +846,87 @@ function exportPdJSON(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='문제데이터.json';a.click();
 }
 
+// ── PDF 드래그앤드롭 초기화 ──────────────────────────────────
+function initPdDropZone(){
+  const v4=document.getElementById('v4');
+  const overlay=document.getElementById('pdDropOverlay');
+  const zone=document.getElementById('pdDropZone');
+  if(!v4||!overlay||!zone)return;
+
+  let dragCnt=0;
+  v4.addEventListener('dragenter',e=>{
+    if(!e.dataTransfer.types.includes('Files'))return;
+    e.preventDefault();dragCnt++;
+    overlay.classList.add('show');zone.classList.add('drag-on');
+  });
+  v4.addEventListener('dragleave',()=>{
+    dragCnt--;if(dragCnt<=0){dragCnt=0;overlay.classList.remove('show');zone.classList.remove('drag-on');}
+  });
+  v4.addEventListener('dragover',e=>e.preventDefault());
+  v4.addEventListener('drop',e=>{
+    e.preventDefault();dragCnt=0;overlay.classList.remove('show');zone.classList.remove('drag-on');
+    const files=[...e.dataTransfer.files].filter(f=>f.type==='application/pdf'||f.name.endsWith('.pdf'));
+    if(!files.length){alert('PDF 파일만 지원합니다.');return;}
+    processPdfFiles(files);
+  });
+}
+
+// ── 여러 PDF 순차 처리 ────────────────────────────────────────
+async function processPdfFiles(files){
+  for(const f of files) await processSinglePdf(f);
+}
+
 // ── PDF → 문제 데이터 추출 ───────────────────────────────────
 async function uploadPdPDF(inp){
-  const f=inp.files[0];if(!f)return;
+  const files=[...inp.files].filter(f=>f.name.endsWith('.pdf'));
   inp.value='';
+  if(!files.length)return;
+  processPdfFiles(files);
+}
+
+// 파일별 진행 카드 생성
+function createPdfCard(fname){
+  const id='pdfcard-'+Date.now()+Math.random().toString(36).slice(2);
+  const wrap=document.getElementById('pdPdfQueue');
+  const div=document.createElement('div');
+  div.id=id;
+  div.style.cssText='border:.5px solid var(--bic);border-radius:8px;padding:10px 14px;margin-bottom:8px;background:var(--bi)';
+  div.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+    <span style="font-size:18px">📄</span>
+    <span style="font-size:12px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fname}</span>
+    <span class="card-status" style="font-size:10px;color:var(--ci)">준비 중...</span>
+  </div>
+  <div class="prog-bar"><div class="prog-fill card-prog" style="width:0%"></div></div>
+  <div class="card-sub" style="font-size:10px;color:var(--cs);margin-top:4px"></div>`;
+  wrap.appendChild(div);
+  return {
+    setStatus:(s)=>div.querySelector('.card-status').textContent=s,
+    setProg:(p)=>div.querySelector('.card-prog').style.width=p+'%',
+    setSub:(s)=>div.querySelector('.card-sub').textContent=s,
+    setDone:(ok,msg)=>{
+      div.style.borderColor=ok?'var(--cg)':'#fca5a5';
+      div.style.background=ok?'#f0fdf4':'#fef2f2';
+      div.querySelector('.card-status').textContent=ok?'✅ 완료':'❌ 오류';
+      div.querySelector('.card-status').style.color=ok?'var(--cg)':'#991b1b';
+      div.querySelector('.card-sub').textContent=msg;
+      if(ok)setTimeout(()=>div.remove(),4000);
+    }
+  };
+}
+
+async function processSinglePdf(f){
   const apiKey=localStorage.getItem('apiKey');
   if(!apiKey){alert('API 키를 먼저 등록하세요.');showApiModal();return;}
 
-  const pdPdfStatus=document.getElementById('pdPdfStatus');
-  const pdPdfMsg=document.getElementById('pdPdfMsg');
-  const pdPdfProg=document.getElementById('pdPdfProg');
-  const pdPdfSub=document.getElementById('pdPdfSub');
-  pdPdfStatus.style.display='block';
+  const card=createPdfCard(f.name);
 
   try{
-    // ── 1. pdf.js로 텍스트 추출 ──
-    pdPdfMsg.textContent='📄 PDF 텍스트 추출 중...';
-    pdPdfProg.style.width='10%';
-    pdPdfSub.textContent=f.name;
-
-    if(typeof pdfjsLib==='undefined'){
-      // pdf.js 스크립트 로드 확인
-      await new Promise((res,rej)=>{
-        const s=document.createElement('script');
-        s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-        s.onload=res;s.onerror=()=>rej(new Error('pdf.js 로드 실패'));
-        document.head.appendChild(s);
-      });
-    }
+    // ── 1. pdf.js 워커 설정 ──
+    if(typeof pdfjsLib==='undefined')throw new Error('pdf.js 로드 실패 — 페이지를 새로고침하세요.');
     pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+    // ── 2. 텍스트 추출 ──
+    card.setStatus('추출 중...');card.setProg(5);
     const ab=await f.arrayBuffer();
     const pdf=await pdfjsLib.getDocument({data:ab}).promise;
     const numPages=pdf.numPages;
@@ -866,40 +934,36 @@ async function uploadPdPDF(inp){
     for(let p=1;p<=numPages;p++){
       const page=await pdf.getPage(p);
       const tc=await page.getTextContent();
-      const pageText=tc.items.map(it=>it.str).join(' ');
-      fullText+=`\n[${p}페이지]\n${pageText}`;
-      pdPdfProg.style.width=`${10+Math.round(p/numPages*40)}%`;
-      pdPdfSub.textContent=`텍스트 추출 중... ${p}/${numPages} 페이지`;
+      fullText+='\n['+p+'p]\n'+tc.items.map(it=>it.str).join(' ');
+      card.setProg(5+Math.round(p/numPages*40));
+      card.setSub(`텍스트 추출 ${p}/${numPages} 페이지`);
     }
+    if(!fullText.trim())throw new Error('텍스트 추출 불가 (이미지 PDF이거나 보안 설정)');
 
-    if(!fullText.trim()){throw new Error('PDF에서 텍스트를 추출할 수 없습니다. (이미지 PDF이거나 보안 설정)');}
-
-    // ── 2. Claude AI로 구조화 ──
-    pdPdfMsg.textContent='🤖 AI가 문제 데이터 구조화 중...';
-    pdPdfProg.style.width='55%';
-    pdPdfSub.textContent='학년·문제번호·정답·핵심포인트·필수용어 추출';
+    // ── 3. Claude AI 구조화 ──
+    card.setStatus('AI 분석 중...');card.setProg(50);
+    card.setSub('학년·문제·정답·핵심포인트·필수용어 추출');
 
     const prompt=`당신은 수학말하기대회 문제 PDF를 분석하는 전문가입니다.
 아래 PDF 텍스트에서 학년별 문제 데이터를 추출하여 JSON으로 반환하세요.
 
-추출 항목:
-- 학년: "초등4", "초등5", "초등6", "중1", "중2", "중3" 중 하나
+[추출 항목]
+- 학년: "초등4" "초등5" "초등6" "중1" "중2" "중3" 중 하나 (PDF에 명시된 학년)
 - id: 문제 번호 (정수)
-- title: "N번 — 단원명" 형식 (예: "3번 — 정비례와 반비례")
-- q: 문제 전문 (조건·보기 포함)
-- ans: 정답 (풀이 과정 제외, 최종 답만)
-- kp: 핵심 풀이 포인트 — 학생이 발표에서 반드시 보여줘야 할 풀이 단계 (채점 기준)
-- terms: 필수 수학 용어 배열 (해당 단원에서 사용해야 할 용어들)
+- title: "N번 — 단원명" 형식
+- q: 문제 전문 (조건·보기 포함, 원문 그대로)
+- ans: 최종 정답만 (풀이 과정 제외)
+- kp: 핵심 풀이 포인트 — 채점 기준이 될 핵심 단계, 수식 포함
+- terms: 이 단원 필수 수학 용어 배열
 
-반환 형식 (JSON만, 설명 없음):
-{"초등4":[{"id":1,"title":"...","q":"...","ans":"...","kp":"...","terms":["...","..."]}],"중1":[...]}
+[반환 형식] JSON만, 설명 없음:
+{"중1":[{"id":1,"title":"1번 — 정수와 유리수","q":"...","ans":"...","kp":"...","terms":["용어1","용어2"]}]}
 
-학년이 여러 개면 모두 포함. 해당 학년 문제가 없으면 키 생략.
-텍스트에서 명확하지 않은 항목은 빈 문자열("") 또는 빈 배열([])로 처리.
+학년이 명확하지 않으면 내용으로 추론하세요. 텍스트가 불명확한 항목은 빈값 처리.
 
 PDF 텍스트:
 """
-${fullText.slice(0,12000)}
+${fullText.slice(0,14000)}
 """`;
 
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
@@ -907,52 +971,31 @@ ${fullText.slice(0,12000)}
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4096,messages:[{role:'user',content:prompt}]})
     });
-    if(!resp.ok){const e=await resp.json();throw new Error(e.error?.message||'API 오류');}
+    if(!resp.ok){const e=await resp.json();throw new Error(e.error?.message||'API 오류 '+resp.status);}
     const data=await resp.json();
     const raw=data.content?.[0]?.text||'';
 
-    pdPdfProg.style.width='80%';
-    pdPdfMsg.textContent='📋 결과 검토 중...';
+    card.setProg(90);card.setStatus('파싱 중...');
 
-    // JSON 파싱
     const m=raw.match(/\{[\s\S]*\}/);
-    if(!m)throw new Error('AI 응답에서 JSON을 찾을 수 없습니다.');
+    if(!m)throw new Error('AI 응답에서 JSON을 찾을 수 없음');
     const parsed=JSON.parse(m[0]);
 
-    // ── 3. 결과 미리보기 + 확인 ──
-    pdPdfProg.style.width='100%';
-    pdPdfMsg.textContent='✅ 추출 완료';
-
-    let summary='';
-    let totalProbs=0;
+    // ── 4. PD 반영 ──
+    let summary='',cnt=0;
     PD_GRADES.forEach(g=>{
-      if(parsed[g]&&parsed[g].length){
-        summary+=`${g}: ${parsed[g].length}문제\n`;
-        totalProbs+=parsed[g].length;
-      }
+      if(parsed[g]?.length){PD[g]=parsed[g];cnt+=parsed[g].length;summary+=`${g} ${parsed[g].length}문제  `;}
     });
+    if(!cnt)throw new Error('추출된 문제 없음 — PDF 내용 확인 필요');
 
-    if(!totalProbs){throw new Error('추출된 문제가 없습니다. PDF 내용과 형식을 확인해주세요.');}
+    savePD();
+    const firstGr=PD_GRADES.find(g=>parsed[g]?.length);
+    if(firstGr){_pdGr=firstGr;}
+    renderPdMgr();
+    card.setProg(100);card.setDone(true,summary.trim());
 
-    pdPdfSub.textContent=summary.trim().replace(/\n/g,' | ');
-
-    if(confirm(`✅ PDF 분석 완료!\n\n${summary}\n총 ${totalProbs}문제를 등록할까요?\n기존 같은 학년 데이터는 덮어씁니다.`)){
-      PD_GRADES.forEach(g=>{if(parsed[g]&&parsed[g].length)PD[g]=parsed[g];});
-      savePD();
-      renderPdMgr();
-      // 첫 번째로 추출된 학년 탭으로 이동
-      const firstGr=PD_GRADES.find(g=>parsed[g]&&parsed[g].length);
-      if(firstGr){_pdGr=firstGr;renderPdMgr();}
-      setTimeout(()=>{pdPdfStatus.style.display='none';},2000);
-    }else{
-      pdPdfStatus.style.display='none';
-    }
   }catch(err){
-    pdPdfMsg.textContent='❌ 오류: '+err.message;
-    pdPdfMsg.style.color='#991b1b';
-    pdPdfProg.style.background='#fca5a5';
-    pdPdfSub.textContent='파일을 다시 확인하거나 JSON/엑셀로 직접 입력하세요.';
-    setTimeout(()=>{pdPdfStatus.style.display='none';pdPdfMsg.style.color='';pdPdfProg.style.background='';},5000);
+    card.setProg(100);card.setDone(false,err.message);
   }
 }
 
