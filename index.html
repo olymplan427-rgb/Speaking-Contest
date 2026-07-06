@@ -350,10 +350,12 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
 <!-- VIEW 3: Judge -->
 <div id="v3" class="view">
 <!-- 자동 채점 중 멈춤 배너 -->
-<div id="batchBanner" style="display:none;align-items:center;gap:10px;padding:8px 14px;background:#1d4ed8;color:#fff;font-size:13px;font-weight:600">
-  <span>🤖 전체 자동 채점 진행 중</span>
+<div id="batchBanner" style="display:none;align-items:center;gap:10px;padding:8px 14px;color:#fff;font-size:13px;font-weight:600;background:#1d4ed8">
+  <span id="batchBannerIcon">🤖</span>
+  <span id="batchBannerLabel">전체 자동 채점 진행 중</span>
   <span id="batchProgress" style="flex:1;opacity:.85;font-weight:400"></span>
-  <button onclick="stopAutoJudge()" style="padding:5px 14px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">⏹ 멈추기</button>
+  <button id="batchStopBtn" onclick="stopAutoJudge()" style="padding:5px 14px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">⏹ 멈추기</button>
+  <button id="batchResumeBtn" onclick="resumeAutoJudge()" style="display:none;padding:5px 14px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">▶ 재시작</button>
 </div>
 <div class="jl">
 
@@ -1120,14 +1122,37 @@ function startAutoJudge(){
 function stopAutoJudge(){
   if(!confirm('자동 채점을 멈춥니다.\n현재 채점 중인 학생은 완료 후 멈춥니다.\n계속할까요?'))return;
   autoBatchMode=false;
-  document.getElementById('batchBanner').style.display='none';
+  updBatchBanner();
+}
+function resumeAutoJudge(){
+  const pending=queue.filter(q=>q.status2==='pending').length;
+  if(!pending){alert('남은 학생이 없습니다.');updBatchBanner();return;}
+  autoBatchMode=true;
+  updBatchBanner();
+  const fi=queue.findIndex(q=>q.status2==='pending');
+  jQ(fi>=0?fi:0);
 }
 function updBatchBanner(){
-  if(!autoBatchMode){document.getElementById('batchBanner').style.display='none';return;}
   const done=queue.filter(q=>q.status2==='done').length;
   const total=queue.length;
-  document.getElementById('batchBanner').style.display='flex';
+  const pending=total-done;
+  const banner=document.getElementById('batchBanner');
+  if(!done&&!autoBatchMode){banner.style.display='none';return;}
+  banner.style.display='flex';
   document.getElementById('batchProgress').textContent=`${done} / ${total}명 완료`;
+  if(autoBatchMode){
+    banner.style.background='#1d4ed8';
+    document.getElementById('batchBannerIcon').textContent='🤖';
+    document.getElementById('batchBannerLabel').textContent='전체 자동 채점 진행 중';
+    document.getElementById('batchStopBtn').style.display='';
+    document.getElementById('batchResumeBtn').style.display='none';
+  }else{
+    banner.style.background='#92400e';
+    document.getElementById('batchBannerIcon').textContent='⏸';
+    document.getElementById('batchBannerLabel').textContent=`일시정지 — 남은 ${pending}명`;
+    document.getElementById('batchStopBtn').style.display='none';
+    document.getElementById('batchResumeBtn').style.display='';
+  }
 }
 
 function jQ(i){
