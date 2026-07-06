@@ -1838,12 +1838,34 @@ function renderTranscript(data){
 
 function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
+async function resizeFrameForVision(b64){
+  // 480px 너비로 축소해 API 토큰 절감 (Canvas 이용)
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      const MAX=480;
+      const scale=img.width>MAX?MAX/img.width:1;
+      const c=document.createElement('canvas');
+      c.width=Math.round(img.width*scale);
+      c.height=Math.round(img.height*scale);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      resolve(c.toDataURL('image/jpeg',0.82).split(',')[1]);
+    };
+    img.onerror=()=>resolve(b64); // 리사이즈 실패 시 원본 사용
+    img.src='data:image/jpeg;base64,'+b64;
+  });
+}
+
 async function extractBoardText(frames, apiKey){
   const validFrames=frames.filter(Boolean);
   if(!validFrames.length)return null;
   const labels=['도입부','전개부','마무리'];
+
+  // 이미지 리사이즈 (병렬)
+  const resized=await Promise.all(frames.map(f=>f?resizeFrameForVision(f):Promise.resolve(null)));
+
   const content=[];
-  frames.forEach((f,i)=>{
+  resized.forEach((f,i)=>{
     if(!f)return;
     content.push({type:'text',text:`[${labels[i]} 이미지]`});
     content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:f}});
@@ -1857,12 +1879,17 @@ JSON만 응답: {"도입부":"판서내용 또는 없음","전개부":"판서내
       headers:{'x-api-key':apiKey,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,messages:[{role:'user',content}]})
     });
-    if(!resp.ok)return null;
+    if(!resp.ok){
+      const errBody=await resp.json().catch(()=>({}));
+      console.warn('[판서텍스트] API 오류',resp.status, errBody);
+      return {_error: `API ${resp.status}: ${errBody?.error?.message||'알 수 없는 오류'}`};
+    }
     const d=await resp.json();
     const txt=(d.content||[]).find(c=>c.type==='text')?.text||'';
     const m=txt.match(/\{[\s\S]*\}/);
+    if(!m){console.warn('[판서텍스트] JSON 파싱 실패, 원문:', txt);}
     return m?JSON.parse(m[0]):null;
-  }catch(e){return null;}
+  }catch(e){console.warn('[판서텍스트] 예외:', e);return null;}
 }
 
 function renderBoardText(data, frames){
@@ -1871,8 +1898,14 @@ function renderBoardText(data, frames){
   const badge=document.getElementById('boardTextBadge');
   const cont=document.getElementById('boardTextContent');
   if(!data){
-    badge.textContent='Vision 없음';badge.style.background='#FEF9C3';badge.style.color='#92400E';
-    cont.innerHTML='<div class="tstat">영상 캡처가 없어 판서 텍스트를 인식할 수 없습니다.</div>';return;
+    const hasFrames=frames&&frames.filter(Boolean).length>0;
+    badge.textContent=hasFrames?'인식 실패':'Vision 없음';
+    badge.style.background='#FEF9C3';badge.style.color='#92400E';
+    cont.innerHTML=`<div class="tstat">${hasFrames?'판서 텍스트 인식 중 오류가 발생했습니다. (브라우저 콘솔에서 상세 확인)':'영상 캡처가 없어 판서 텍스트를 인식할 수 없습니다.'}</div>`;return;
+  }
+  if(data._error){
+    badge.textContent='API 오류';badge.style.background='#FEF2F2';badge.style.color='#991B1B';
+    cont.innerHTML=`<div class="tstat">판서 텍스트 인식 실패: ${escHtml(data._error)}</div>`;return;
   }
   const labels=['도입부','전개부','마무리'];
   badge.textContent='인식 완료';badge.style.background='#F0FDF4';badge.style.color='var(--cg)';
