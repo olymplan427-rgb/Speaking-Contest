@@ -12,7 +12,7 @@ from flask_cors import CORS
 import subprocess, tempfile, os, base64, json, re
 
 # ★ 여기에 NVIDIA NIM API 키를 입력하세요 ★
-NVIDIA_API_KEY = "nvapi-여기에붙여넣기"
+NVIDIA_API_KEY = "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"
 
 app = Flask(__name__)
 CORS(app)
@@ -167,44 +167,56 @@ def extract_transcript():
         video_path = os.path.join(tmpdir, 'video.mp4')
         audio_path = os.path.join(tmpdir, 'audio.mp3')
 
-        # ━━ 1. 영상 다운로드 (yt-dlp → ffmpeg 직접 순서) ━━
+        # ━━ 1. 영상 다운로드 ━━
+        print(f'[전사] 영상 다운로드 시작: {url}')
         downloaded = False
         try:
-            subprocess.run([
+            r = subprocess.run([
                 'yt-dlp', '-f', 'bestvideo[ext=mp4]+bestaudio/best[ext=mp4]/best',
                 '--merge-output-format', 'mp4',
                 '--no-playlist', '--socket-timeout', '30',
                 '-o', video_path, url
-            ], capture_output=True, timeout=180)
+            ], capture_output=True, text=True, timeout=180)
+            print(f'[전사] yt-dlp stdout: {r.stdout[-300:]}')
+            print(f'[전사] yt-dlp stderr: {r.stderr[-300:]}')
             if os.path.exists(video_path) and os.path.getsize(video_path) > 0:
                 downloaded = True
-        except Exception:
-            pass
+                print(f'[전사] yt-dlp 다운로드 성공: {os.path.getsize(video_path)} bytes')
+        except Exception as e:
+            print(f'[전사] yt-dlp 실패: {e}')
 
         if not downloaded:
             try:
-                subprocess.run([
+                r2 = subprocess.run([
                     'ffmpeg', '-y', '-i', url, '-t', '600', '-c', 'copy', video_path
-                ], capture_output=True, timeout=60)
+                ], capture_output=True, text=True, timeout=60)
+                print(f'[전사] ffmpeg stderr: {r2.stderr[-300:]}')
                 if os.path.exists(video_path) and os.path.getsize(video_path) > 0:
                     downloaded = True
-            except Exception:
-                pass
+                    print(f'[전사] ffmpeg 다운로드 성공: {os.path.getsize(video_path)} bytes')
+            except Exception as e:
+                print(f'[전사] ffmpeg 실패: {e}')
 
         if not downloaded:
+            print('[전사] 영상 다운로드 최종 실패')
             return jsonify({'error': '영상 다운로드 실패. URL을 확인하세요.', 'segments': [], 'full_text': ''}), 200
 
-        # ━━ 2. 오디오 추출 (mono 16kHz mp3 — ASR 최적화) ━━
-        subprocess.run([
+        # ━━ 2. 오디오 추출 ━━
+        print('[전사] 오디오 추출 중...')
+        r3 = subprocess.run([
             'ffmpeg', '-y', '-i', video_path,
             '-vn', '-ar', '16000', '-ac', '1', '-b:a', '64k',
             audio_path
-        ], capture_output=True, timeout=120)
+        ], capture_output=True, text=True, timeout=120)
+        print(f'[전사] ffmpeg 오디오 stderr: {r3.stderr[-200:]}')
 
         if not (os.path.exists(audio_path) and os.path.getsize(audio_path) > 0):
+            print('[전사] 오디오 추출 실패')
             return jsonify({'error': '오디오 추출 실패.', 'segments': [], 'full_text': ''}), 200
+        print(f'[전사] 오디오 추출 성공: {os.path.getsize(audio_path)} bytes')
 
         # ━━ 3. NVIDIA NIM Parakeet ASR ━━
+        print('[전사] NVIDIA Parakeet ASR 요청 중...')
         try:
             from openai import OpenAI
             client = OpenAI(
@@ -217,6 +229,8 @@ def extract_transcript():
                     file=f,
                     response_format='verbose_json'
                 )
+            print(f'[전사] 응답 타입: {type(response)}')
+            print(f'[전사] 응답 내용: {str(response)[:500]}')
 
             segs = []
             if hasattr(response, 'segments') and response.segments:
@@ -230,9 +244,13 @@ def extract_transcript():
                 if full_text:
                     segs = [{'time': 0.0, 'text': full_text}]
 
+            print(f'[전사] 완료: {len(segs)}개 세그먼트')
             return jsonify({'segments': segs, 'full_text': full_text, 'count': len(segs), 'method': 'nvidia-parakeet'})
 
         except Exception as e:
+            import traceback
+            print(f'[전사] NVIDIA 오류: {e}')
+            print(traceback.format_exc())
             return jsonify({'error': f'NVIDIA Parakeet 오류: {str(e)}', 'segments': [], 'full_text': ''}), 200
 
 

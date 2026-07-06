@@ -1744,17 +1744,23 @@ function togglePanel(id){
 }
 
 async function extractTranscriptFromServer(url){
+  console.log('[transcript] 요청 시작:', url);
   try{
-    const nvidia_key=localStorage.getItem('nvidiaKey')||'';
     const r=await fetch('http://localhost:8080/extract-transcript',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({url}),
       signal:AbortSignal.timeout(120000)
     });
-    if(!r.ok)return null;
-    return await r.json();
-  }catch(e){return null;}
+    console.log('[transcript] 서버 응답:', r.status);
+    if(!r.ok){console.error('[transcript] 응답 오류:', r.status);return null;}
+    const d=await r.json();
+    console.log('[transcript] 결과:', d);
+    return d;
+  }catch(e){
+    console.error('[transcript] fetch 오류:', e.name, e.message);
+    return null;
+  }
 }
 
 function renderTranscript(data){
