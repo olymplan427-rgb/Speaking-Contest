@@ -349,6 +349,12 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
 
 <!-- VIEW 3: Judge -->
 <div id="v3" class="view">
+<!-- 자동 채점 중 멈춤 배너 -->
+<div id="batchBanner" style="display:none;align-items:center;gap:10px;padding:8px 14px;background:#1d4ed8;color:#fff;font-size:13px;font-weight:600">
+  <span>🤖 전체 자동 채점 진행 중</span>
+  <span id="batchProgress" style="flex:1;opacity:.85;font-weight:400"></span>
+  <button onclick="stopAutoJudge()" style="padding:5px 14px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">⏹ 멈추기</button>
+</div>
 <div class="jl">
 
 <!-- Left -->
@@ -1107,8 +1113,21 @@ function startAutoJudge(){
   if(!pending){alert('대기 중인 학생이 없습니다.\n이미 모두 채점 완료된 상태입니다.');return;}
   if(!confirm(`${pending}명을 순서대로 자동 채점합니다.\n채점 중 창을 닫거나 새로고침하지 마세요.\n\n시작할까요?`)){return;}
   autoBatchMode=true;
+  updBatchBanner();
   const fi=queue.findIndex(q=>q.status2==='pending');
   jQ(fi>=0?fi:0);showView('v3');
+}
+function stopAutoJudge(){
+  if(!confirm('자동 채점을 멈춥니다.\n현재 채점 중인 학생은 완료 후 멈춥니다.\n계속할까요?'))return;
+  autoBatchMode=false;
+  document.getElementById('batchBanner').style.display='none';
+}
+function updBatchBanner(){
+  if(!autoBatchMode){document.getElementById('batchBanner').style.display='none';return;}
+  const done=queue.filter(q=>q.status2==='done').length;
+  const total=queue.length;
+  document.getElementById('batchBanner').style.display='flex';
+  document.getElementById('batchProgress').textContent=`${done} / ${total}명 완료`;
 }
 
 function jQ(i){
@@ -1655,6 +1674,7 @@ JSON만 응답:
     setTimeout(()=>{
       applyScoresToUI();showResult();
       saveResultOnly();  // 채점 완료 즉시 저장 (수동/자동 공통)
+      updBatchBanner();
       if(autoBatchMode){setTimeout(()=>saveNext(),1800);}
     },400);
 
@@ -1670,7 +1690,7 @@ JSON만 응답:
       setProgress(`❌ 채점 오류: ${errMsg}`,0);
       console.error('[runAI]',err);
     }
-    if(autoBatchMode){autoBatchMode=false;}
+    if(autoBatchMode){autoBatchMode=false;updBatchBanner();}
     showEmpty();
   }
 }
@@ -1936,7 +1956,7 @@ function saveNext(){
   const ni=queue.findIndex((q,i)=>i>curI&&q.status2==='pending');
   if(ni>=0){jQ(ni);}
   else if(queue.every(q=>q.status2==='done')){
-    if(autoBatchMode){autoBatchMode=false;renderReview();showView('v2');}
+    if(autoBatchMode){autoBatchMode=false;updBatchBanner();renderReview();showView('v2');}
     else{alert(`🎉 전체 ${queue.length}건 채점 완료!\n[엑셀 저장] 버튼으로 결과를 다운로드하세요.`);showView('v2');}
   }
   else{const fi=queue.findIndex(q=>q.status2==='pending');if(fi>=0)jQ(fi);}
