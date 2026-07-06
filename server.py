@@ -143,96 +143,90 @@ def extract_frames():
 
 @app.route('/extract-transcript', methods=['POST'])
 def extract_transcript():
-    """음성 전사: yt-dlp 자동음성인식(빠름) → 없으면 Whisper STT(느림) 순서로 시도"""
+    """음성 전사: 영상에서 오디오 추출 → NVIDIA NIM Parakeet ASR"""
     data = request.json or {}
     url = (data.get('url') or '').strip()
+    nvidia_key = (data.get('nvidia_key') or '').strip()
+
     if not url:
         return jsonify({'error': 'URL이 없습니다.'}), 400
+    if not nvidia_key:
+        return jsonify({
+            'error': 'NVIDIA NIM API 키가 없습니다. 설정(🔑)에서 nvapi-... 키를 입력해주세요.',
+            'segments': [], 'full_text': ''
+        }), 200
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        sub_base = os.path.join(tmpdir, 'sub')
+        video_path = os.path.join(tmpdir, 'video.mp4')
+        audio_path = os.path.join(tmpdir, 'audio.mp3')
 
-        # ━━ 경로 A: yt-dlp 자동음성인식 (Google STT 기반, 빠름 5~10초) ━━
-        subprocess.run([
-            'yt-dlp',
-            '--write-auto-subs', '--write-subs',
-            '--sub-lang', 'ko',
-            '--sub-format', 'vtt',
-            '--skip-download',
-            '--no-playlist',
-            '-o', sub_base,
-            url
-        ], capture_output=True, text=True, timeout=60)
-
-        vtt_path = None
-        for fn in os.listdir(tmpdir):
-            if fn.endswith('.vtt'):
-                vtt_path = os.path.join(tmpdir, fn)
-                break
-
-        if vtt_path:
-            # VTT 파싱 → 타임스탬프 세그먼트
-            with open(vtt_path, 'r', encoding='utf-8') as f:
-                raw = f.read()
-            segments = []
-            seen = set()
-            for block in re.split(r'\n\n+', raw):
-                lines = block.strip().splitlines()
-                ts = next((l for l in lines if '-->' in l), None)
-                if not ts:
-                    continue
-                m = re.match(r'(\d+:\d+:\d+[\.,]\d+)', ts)
-                if not m:
-                    continue
-                start = m.group(1).replace(',', '.')
-                text_lines = [l for l in lines if '-->' not in l and not l.strip().isdigit() and l.strip()]
-                text = re.sub(r'<[^>]+>', '', ' '.join(text_lines)).strip()
-                text = re.sub(r'\s+', ' ', text)
-                if not text or text in seen:
-                    continue
-                seen.add(text)
-                parts = start.split(':')
-                secs = int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
-                segments.append({'time': round(secs, 1), 'text': text})
-            if segments:
-                return jsonify({
-                    'segments': segments,
-                    'full_text': ' '.join(s['text'] for s in segments),
-                    'count': len(segments),
-                    'method': 'auto-stt'
-                })
-
-        # ━━ 경로 B: Whisper 로컬 STT (느림, 1~5분) ━━
+        # ━━ 1. 영상 다운로드 (yt-dlp → ffmpeg 직접 순서) ━━
+        downloaded = False
         try:
-            import whisper as _whisper
-        except ImportError:
-            return jsonify({
-                'error': '음성 전사 불가 — 이 영상은 자동음성인식이 없고 Whisper도 미설치입니다.\npip install openai-whisper 로 설치하면 직접 전사가 가능합니다.',
-                'segments': [], 'full_text': ''
-            }), 200
+            subprocess.run([
+                'yt-dlp', '-f', 'bestvideo[ext=mp4]+bestaudio/best[ext=mp4]/best',
+                '--merge-output-format', 'mp4',
+                '--no-playlist', '--socket-timeout', '30',
+                '-o', video_path, url
+            ], capture_output=True, timeout=180)
+            if os.path.exists(video_path) and os.path.getsize(video_path) > 0:
+                downloaded = True
+        except Exception:
+            pass
 
-        audio_path = os.path.join(tmpdir, 'audio.m4a')
+        if not downloaded:
+            try:
+                subprocess.run([
+                    'ffmpeg', '-y', '-i', url, '-t', '600', '-c', 'copy', video_path
+                ], capture_output=True, timeout=60)
+                if os.path.exists(video_path) and os.path.getsize(video_path) > 0:
+                    downloaded = True
+            except Exception:
+                pass
+
+        if not downloaded:
+            return jsonify({'error': '영상 다운로드 실패. URL을 확인하세요.', 'segments': [], 'full_text': ''}), 200
+
+        # ━━ 2. 오디오 추출 (mono 16kHz mp3 — ASR 최적화) ━━
         subprocess.run([
-            'yt-dlp', '-f', 'bestaudio[ext=m4a]/bestaudio',
-            '--no-playlist', '--socket-timeout', '30',
-            '-o', audio_path, url
+            'ffmpeg', '-y', '-i', video_path,
+            '-vn', '-ar', '16000', '-ac', '1', '-b:a', '64k',
+            audio_path
         ], capture_output=True, timeout=120)
 
         if not (os.path.exists(audio_path) and os.path.getsize(audio_path) > 0):
-            return jsonify({'error': '오디오 다운로드 실패. URL을 확인하세요.', 'segments': [], 'full_text': ''}), 200
+            return jsonify({'error': '오디오 추출 실패.', 'segments': [], 'full_text': ''}), 200
 
-        model = _whisper.load_model('base')
-        result = model.transcribe(audio_path, language='ko', verbose=False)
-        segs = [
-            {'time': round(s['start'], 1), 'text': s['text'].strip()}
-            for s in result.get('segments', []) if s['text'].strip()
-        ]
-        return jsonify({
-            'segments': segs,
-            'full_text': result.get('text', '').strip(),
-            'count': len(segs),
-            'method': 'whisper'
-        })
+        # ━━ 3. NVIDIA NIM Parakeet ASR ━━
+        try:
+            from openai import OpenAI
+            client = OpenAI(
+                base_url='https://integrate.api.nvidia.com/v1',
+                api_key=nvidia_key
+            )
+            with open(audio_path, 'rb') as f:
+                response = client.audio.transcriptions.create(
+                    model='nvidia/parakeet-1.1b-rnnt-multilingual-asr',
+                    file=f,
+                    response_format='verbose_json'
+                )
+
+            segs = []
+            if hasattr(response, 'segments') and response.segments:
+                for s in response.segments:
+                    text = (s.text or '').strip()
+                    if text:
+                        segs.append({'time': round(float(s.start), 1), 'text': text})
+                full_text = (response.text or '').strip() or ' '.join(s['text'] for s in segs)
+            else:
+                full_text = (response.text or '').strip()
+                if full_text:
+                    segs = [{'time': 0.0, 'text': full_text}]
+
+            return jsonify({'segments': segs, 'full_text': full_text, 'count': len(segs), 'method': 'nvidia-parakeet'})
+
+        except Exception as e:
+            return jsonify({'error': f'NVIDIA Parakeet 오류: {str(e)}', 'segments': [], 'full_text': ''}), 200
 
 
 if __name__ == '__main__':
