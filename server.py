@@ -13,7 +13,7 @@ from flask_cors import CORS
 import subprocess, tempfile, os, base64, json, re
 
 # ★ 여기에 Groq API 키를 입력하세요 ★
-GROQ_API_KEY = "gsk_여기에붙여넣기"
+GROQ_API_KEY = "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"
 
 app = Flask(__name__)
 CORS(app)
@@ -94,33 +94,27 @@ def extract_frames():
 
         # ━━ 3. 공백구간 감지 (끝부분 4개 지점 밝기 체크) ━━
         effective_duration = actual_duration
-        checkpoints = [0.95, 0.85, 0.75, 0.65]
-        for ratio in checkpoints:
-            t = actual_duration * ratio
-            snap = os.path.join(tmpdir, 'snap.jpg')
-            subprocess.run([
-                'ffmpeg', '-y', '-ss', str(t), '-i', video_path,
-                '-vframes', '1', '-vf', 'scale=64:36', '-q:v', '5', snap
-            ], capture_output=True, timeout=8)
-            if not os.path.exists(snap):
-                break
-            # 밝기 계산 (ffprobe signalstats)
-            r2 = subprocess.run([
-                'ffprobe', '-v', 'quiet', '-f', 'lavfi',
-                f'-i', f'movie={snap},signalstats',
-                '-show_entries', 'frame_tags=lavfi.signalstats.YAVG',
-                '-print_format', 'json'
-            ], capture_output=True, text=True, timeout=8)
-            brightness = 0
-            try:
-                tags = json.loads(r2.stdout).get('frames', [{}])[0].get('tags', {})
-                brightness = float(tags.get('lavfi.signalstats.YAVG', 0))
-            except Exception:
-                brightness = 10  # 감지 불가 시 유효로 간주
-            if brightness > 8:
-                effective_duration = min(actual_duration * ratio + actual_duration * 0.1, actual_duration)
-                break
-            effective_duration = actual_duration * ratio
+        try:
+            from PIL import Image
+            checkpoints = [0.95, 0.85, 0.75, 0.65]
+            for ratio in checkpoints:
+                t = actual_duration * ratio
+                snap = os.path.join(tmpdir, 'snap.jpg')
+                subprocess.run([
+                    'ffmpeg', '-y', '-ss', str(t), '-i', video_path,
+                    '-vframes', '1', '-vf', 'scale=64:36', '-q:v', '5', snap
+                ], capture_output=True, timeout=8)
+                if not os.path.exists(snap) or os.path.getsize(snap) == 0:
+                    break
+                img = Image.open(snap).convert('L')
+                pixels = list(img.getdata())
+                brightness = sum(pixels) / len(pixels) if pixels else 0
+                if brightness > 20:  # 0~255 스케일, 20 이상이면 유효 프레임
+                    effective_duration = min(actual_duration * ratio + actual_duration * 0.1, actual_duration)
+                    break
+                effective_duration = actual_duration * ratio
+        except Exception:
+            effective_duration = actual_duration  # PIL 없거나 감지 실패 → 전체 길이 사용
 
         # ━━ 4. 3구간 프레임 추출 (도입 15% / 전개 50% / 마무리 82%) ━━
         timepoints = [effective_duration * 0.15, effective_duration * 0.50, effective_duration * 0.82]
