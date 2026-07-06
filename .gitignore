@@ -1,0 +1,6 @@
+node_modules/
+__pycache__/
+*.pyc
+
+# API 키가 포함된 로컬 서버 파일 — git 추적 제외
+server.py
