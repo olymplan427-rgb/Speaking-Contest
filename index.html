@@ -180,9 +180,7 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
     <div style="font-size:11px;font-weight:600;color:var(--cs);margin-bottom:4px">Anthropic API 키 (AI 채점 필수)</div>
     <div class="mnote">📌 <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys</div>
     <input class="minp" id="apiKeyInp" type="password" placeholder="sk-ant-api03-...">
-    <div style="font-size:11px;font-weight:600;color:var(--cs);margin-bottom:4px;margin-top:8px">NVIDIA NIM API 키 (음성 전사 필수)</div>
-    <div class="mnote">📌 <a href="https://build.nvidia.com/nvidia/parakeet-1_1b-rnnt-multilingual-asr" target="_blank">build.nvidia.com</a> → Get API Key (무료, 카드 불필요)<br>🎙️ Parakeet ASR — 한국어 지원, 10~20초 완료, 무료 크레딧 제공</div>
-    <input class="minp" id="openaiKeyInp" type="password" placeholder="nvapi-...">
+    <div class="mnote" style="margin-top:8px">🎙️ 음성 전사는 로컬 서버(server.py) 상단의 <strong>NVIDIA_API_KEY</strong>에 키를 입력하면 자동으로 사용됩니다.<br>발급: <a href="https://build.nvidia.com/nvidia/parakeet-1_1b-rnnt-multilingual-asr" target="_blank">build.nvidia.com</a> → Get API Key (무료)</div>
     <div class="mrow">
       <button class="btn bsc" onclick="closeApiModal()">나중에</button>
       <button class="btn bpr" onclick="saveApiKey()">저장하고 계속</button>
@@ -663,14 +661,12 @@ function showView(id){
   const el=document.getElementById(id);if(el){el.style.display='';el.classList.add('on');}
   if(id==='v2')renderReview();if(id==='v1')updApiSt();if(id==='v4')renderPdMgr();
 }
-function showApiModal(){document.getElementById('apiModal').classList.add('on');document.getElementById('apiKeyInp').value=localStorage.getItem('apiKey')||'';document.getElementById('openaiKeyInp').value=localStorage.getItem('nvidiaKey')||'';}
+function showApiModal(){document.getElementById('apiModal').classList.add('on');document.getElementById('apiKeyInp').value=localStorage.getItem('apiKey')||'';}
 function closeApiModal(){document.getElementById('apiModal').classList.remove('on');}
 function saveApiKey(){
   const k=document.getElementById('apiKeyInp').value.trim();
   if(k&&!k.startsWith('sk-')){alert('Anthropic API 키 형식이 올바르지 않습니다 (sk-ant-... 형식)');return;}
   if(k)localStorage.setItem('apiKey',k);
-  const nk=document.getElementById('openaiKeyInp').value.trim();
-  if(nk)localStorage.setItem('nvidiaKey',nk);
   closeApiModal();updApiSt();
 }
 function updApiSt(){
@@ -1753,7 +1749,7 @@ async function extractTranscriptFromServer(url){
     const r=await fetch('http://localhost:8080/extract-transcript',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({url, nvidia_key}),
+      body:JSON.stringify({url}),
       signal:AbortSignal.timeout(120000)
     });
     if(!r.ok)return null;

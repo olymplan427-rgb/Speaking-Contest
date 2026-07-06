@@ -2,10 +2,17 @@
 수학말하기대회 AI 심사 — 로컬 Vision 서버
 실행: python server.py
 포트: 8080
+
+━━ NVIDIA NIM API 키 설정 ━━
+아래 NVIDIA_API_KEY에 nvapi-... 키를 붙여넣으세요.
+발급: https://build.nvidia.com/nvidia/parakeet-1_1b-rnnt-multilingual-asr → Get API Key
 """
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import subprocess, tempfile, os, base64, json, re
+
+# ★ 여기에 NVIDIA NIM API 키를 입력하세요 ★
+NVIDIA_API_KEY = "nvapi-여기에붙여넣기"
 
 app = Flask(__name__)
 CORS(app)
@@ -146,13 +153,13 @@ def extract_transcript():
     """음성 전사: 영상에서 오디오 추출 → NVIDIA NIM Parakeet ASR"""
     data = request.json or {}
     url = (data.get('url') or '').strip()
-    nvidia_key = (data.get('nvidia_key') or '').strip()
-
     if not url:
         return jsonify({'error': 'URL이 없습니다.'}), 400
-    if not nvidia_key:
+
+    nvidia_key = NVIDIA_API_KEY.strip()
+    if not nvidia_key or nvidia_key == 'nvapi-여기에붙여넣기':
         return jsonify({
-            'error': 'NVIDIA NIM API 키가 없습니다. 설정(🔑)에서 nvapi-... 키를 입력해주세요.',
+            'error': 'NVIDIA API 키 미설정 — server.py 상단 NVIDIA_API_KEY에 nvapi-... 키를 입력 후 재시작하세요.',
             'segments': [], 'full_text': ''
         }), 200
 
