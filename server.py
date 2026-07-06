@@ -13,7 +13,7 @@ from flask_cors import CORS
 import subprocess, tempfile, os, base64, json, re
 
 # ★ 여기에 Groq API 키를 입력하세요 ★
-GROQ_API_KEY = "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"
+GROQ_API_KEY = "gsk_여기에붙여넣기"
 
 app = Flask(__name__)
 CORS(app)
