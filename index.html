@@ -1346,7 +1346,10 @@ function setProgress(txt,pct){
 
 async function runAI(hasVideo){
   const apiKey=localStorage.getItem('apiKey');
-  if(!apiKey){showApiModal();showEmpty();return;}
+  if(!apiKey){
+    if(autoBatchMode){autoBatchMode=false;updBatchBanner();}
+    showApiModal();showEmpty();return;
+  }
 
   showLoading('AI 심사 시작...', 0);
   capturedFrames=[];visionUsed=false;
