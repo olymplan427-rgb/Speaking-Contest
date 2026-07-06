@@ -3,16 +3,17 @@
 실행: python server.py
 포트: 8080
 
-━━ NVIDIA NIM API 키 설정 ━━
-아래 NVIDIA_API_KEY에 nvapi-... 키를 붙여넣으세요.
-발급: https://build.nvidia.com/nvidia/parakeet-1_1b-rnnt-multilingual-asr → Get API Key
+━━ Groq Whisper API 키 설정 (음성 전사용, 무료) ━━
+아래 GROQ_API_KEY에 gsk_... 키를 붙여넣으세요.
+발급: https://console.groq.com → API Keys → Create API Key (무료, 카드 불필요)
+무료 한도: 하루 28,800초(480분) — 대회 전체 전사 충분
 """
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import subprocess, tempfile, os, base64, json, re
 
-# ★ 여기에 NVIDIA NIM API 키를 입력하세요 ★
-NVIDIA_API_KEY = "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"
+# ★ 여기에 Groq API 키를 입력하세요 ★
+GROQ_API_KEY = "gsk_여기에붙여넣기"
 
 app = Flask(__name__)
 CORS(app)
@@ -150,16 +151,16 @@ def extract_frames():
 
 @app.route('/extract-transcript', methods=['POST'])
 def extract_transcript():
-    """음성 전사: 영상에서 오디오 추출 → NVIDIA NIM Parakeet ASR"""
+    """음성 전사: 영상에서 오디오 추출 → Groq Whisper ASR"""
     data = request.json or {}
     url = (data.get('url') or '').strip()
     if not url:
         return jsonify({'error': 'URL이 없습니다.'}), 400
 
-    nvidia_key = NVIDIA_API_KEY.strip()
-    if not nvidia_key or nvidia_key == 'nvapi-여기에붙여넣기':
+    groq_key = GROQ_API_KEY.strip()
+    if not groq_key or groq_key == 'gsk_여기에붙여넣기':
         return jsonify({
-            'error': 'NVIDIA API 키 미설정 — server.py 상단 NVIDIA_API_KEY에 nvapi-... 키를 입력 후 재시작하세요.',
+            'error': 'Groq API 키 미설정 — server.py 상단 GROQ_API_KEY에 gsk_... 키를 입력 후 재시작하세요.\n발급: https://console.groq.com → API Keys',
             'segments': [], 'full_text': ''
         }), 200
 
@@ -215,19 +216,20 @@ def extract_transcript():
             return jsonify({'error': '오디오 추출 실패.', 'segments': [], 'full_text': ''}), 200
         print(f'[전사] 오디오 추출 성공: {os.path.getsize(audio_path)} bytes')
 
-        # ━━ 3. NVIDIA NIM Parakeet ASR ━━
-        print('[전사] NVIDIA Parakeet ASR 요청 중...')
+        # ━━ 3. Groq Whisper ASR ━━
+        print('[전사] Groq Whisper 요청 중...')
         try:
             from openai import OpenAI
             client = OpenAI(
-                base_url='https://integrate.api.nvidia.com/v1',
-                api_key=nvidia_key
+                base_url='https://api.groq.com/openai/v1',
+                api_key=groq_key
             )
             with open(audio_path, 'rb') as f:
                 response = client.audio.transcriptions.create(
-                    model='nvidia/parakeet-1.1b-rnnt-multilingual-asr',
+                    model='whisper-large-v3',
                     file=f,
-                    response_format='verbose_json'
+                    response_format='verbose_json',
+                    language='ko'
                 )
             print(f'[전사] 응답 타입: {type(response)}')
             print(f'[전사] 응답 내용: {str(response)[:500]}')
@@ -245,13 +247,13 @@ def extract_transcript():
                     segs = [{'time': 0.0, 'text': full_text}]
 
             print(f'[전사] 완료: {len(segs)}개 세그먼트')
-            return jsonify({'segments': segs, 'full_text': full_text, 'count': len(segs), 'method': 'nvidia-parakeet'})
+            return jsonify({'segments': segs, 'full_text': full_text, 'count': len(segs), 'method': 'groq-whisper'})
 
         except Exception as e:
             import traceback
-            print(f'[전사] NVIDIA 오류: {e}')
+            print(f'[전사] Groq 오류: {e}')
             print(traceback.format_exc())
-            return jsonify({'error': f'NVIDIA Parakeet 오류: {str(e)}', 'segments': [], 'full_text': ''}), 200
+            return jsonify({'error': f'Groq Whisper 오류: {str(e)}', 'segments': [], 'full_text': ''}), 200
 
 
 if __name__ == '__main__':
