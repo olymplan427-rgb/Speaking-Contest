@@ -228,6 +228,7 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
       <button class="btn bsc" style="font-size:11px" onclick="showApiModal()">🔑 API키 <span id="apiSt2"></span></button>
       <button class="btn bsc" style="font-size:11px" onclick="showPdMgr()">📚 문제 등록</button>
       <button class="btn bsc" style="font-size:11px" onclick="showView('v5')">🎭 페르소나 설정</button>
+      <button class="btn bsc" style="font-size:11px" onclick="showView('v6')">🔬 AI 검증</button>
       <button class="btn bxl" style="font-size:11px" onclick="doXL()"><i class="ti ti-download"></i> 결과 엑셀</button>
     </div>
   </div>
@@ -366,6 +367,49 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
   <div style="display:flex;gap:4px;padding:12px 0 0;flex-wrap:wrap" id="promptGradeTabs"></div>
 
   <div id="promptEditor" style="padding:16px 0"></div>
+</div>
+</div>
+
+<!-- VIEW 6: Validation -->
+<div id="v6" class="view">
+<div class="rvw">
+  <div class="rvh">
+    <div>
+      <div style="font-size:16px;font-weight:500">🔬 AI 채점 검증</div>
+      <div style="font-size:11px;color:var(--cs);margin-top:2px">사람 채점 데이터를 업로드하면 AI가 동일 영상을 채점하고 일치율을 분석합니다</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <button class="btn bsc" style="font-size:11px" onclick="showView('v2')">← 목록으로</button>
+      <label class="btn bxl" style="font-size:11px;cursor:pointer;background:#7c3aed;border-color:#7c3aed;color:#fff">
+        📂 검증용 엑셀 업로드
+        <input type="file" id="valXlIn" accept=".xlsx,.xls" style="display:none" onchange="parseValXL(this)">
+      </label>
+    </div>
+  </div>
+
+  <!-- 집계 통계 -->
+  <div id="valStats" style="display:none;margin:8px 0"></div>
+
+  <!-- 분류 임계값 설정 -->
+  <div id="valThreshWrap" style="display:none;background:var(--bs);border:.5px solid var(--bt);border-radius:8px;padding:10px 14px;margin-bottom:8px">
+    <div style="font-size:11px;font-weight:500;margin-bottom:8px;color:var(--cp)">AI 분류 임계값 설정 <span style="font-size:10px;color:var(--cs);font-weight:400">(AI 총점을 90점 만점 → 100점 환산 후 적용)</span></div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <label style="font-size:11px;color:var(--cs)">탈락/경계선 경계: <input type="number" id="thr1" value="62" min="0" max="100" style="width:48px;padding:2px 4px;border-radius:4px;border:.5px solid var(--b2);background:var(--bp);color:var(--cp);font-size:11px" onchange="renderValList()"> 점</label>
+      <label style="font-size:11px;color:var(--cs)">경계선/합격 경계: <input type="number" id="thr2" value="70" min="0" max="100" style="width:48px;padding:2px 4px;border-radius:4px;border:.5px solid var(--b2);background:var(--bp);color:var(--cp);font-size:11px" onchange="renderValList()"> 점</label>
+      <label style="font-size:11px;color:var(--cs)">합격/고득점 경계: <input type="number" id="thr3" value="80" min="0" max="100" style="width:48px;padding:2px 4px;border-radius:4px;border:.5px solid var(--b2);background:var(--bp);color:var(--cp);font-size:11px" onchange="renderValList()"> 점</label>
+    </div>
+  </div>
+
+  <!-- 목록 -->
+  <div class="rtb">
+    <div id="valList">
+      <div style="padding:40px 20px;text-align:center;color:var(--cs)">
+        <div style="font-size:24px;margin-bottom:8px">📊</div>
+        <div style="font-size:13px;margin-bottom:4px">검증용 엑셀 파일을 업로드하세요</div>
+        <div style="font-size:11px;color:var(--cs)">탈락·경계선·합격·고득점으로 구분된 사람 채점 데이터를 업로드하면<br>AI가 동일 영상을 채점하고 분류 일치율을 분석합니다</div>
+      </div>
+    </div>
+  </div>
 </div>
 </div>
 
@@ -729,9 +773,10 @@ async function extractFramesFromServer(url, durationSec){
 
 // ── 뷰 전환 ───────────────────────────────────────────────────
 function showView(id){
-  ['v1','v2','v3','v4','v5'].forEach(v=>{const el=document.getElementById(v);if(el){el.classList.remove('on');el.style.display='none';}});
+  ['v1','v2','v3','v4','v5','v6'].forEach(v=>{const el=document.getElementById(v);if(el){el.classList.remove('on');el.style.display='none';}});
   const el=document.getElementById(id);if(el){el.style.display='';el.classList.add('on');}
   if(id==='v2')renderReview();if(id==='v1')updApiSt();if(id==='v4')renderPdMgr();if(id==='v5')renderPromptEditor();
+  if(id==='v6')renderValList();
 }
 function showApiModal(){document.getElementById('apiModal').classList.add('on');document.getElementById('apiKeyInp').value=localStorage.getItem('apiKey')||'';}
 function closeApiModal(){document.getElementById('apiModal').classList.remove('on');}
@@ -2248,6 +2293,338 @@ function doXL(){
   const dt=new Date().toLocaleDateString('ko').replace(/\. /g,'').replace('.','');
   const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([out],{type:'application/octet-stream'})),download:`수학말하기대회_심사결과_${dt}.xlsx`});
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href);
+}
+
+// ══════════════════════════════════════════════════════════════
+// ── v6 AI 채점 검증 기능 ──────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+
+let valData = []; // 검증용 데이터 배열
+
+// 엑셀 파싱 — 컬럼 위치(0-indexed): 2=학년,3=팀명,4=팀원,5=발표문제,
+//   14=1차점수평균,19=1차통과여부,49=영상시간,50=영상URL
+function parseValXL(inp) {
+  const f = inp.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = e => {
+    const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+    if (rows.length < 2) { alert('데이터가 없습니다.'); return; }
+    valData = [];
+    rows.slice(1).forEach((r, i) => {
+      const grade  = String(r[2]||'').trim();
+      const team   = String(r[3]||'').trim();
+      const member = String(r[4]||'').trim();
+      const prob   = parseInt((String(r[5]||'1번').match(/\d+/)||['1'])[0]) || 1;
+      const hScore = parseFloat(r[14]) || 0;
+      const hLabel = String(r[19]||'').trim();
+      const durStr = String(r[49]||'').trim();
+      const url    = String(r[50]||'').trim();
+      if (!grade || !url.startsWith('http')) return;
+      valData.push({
+        idx: i, grade, team, member: member||team, prob,
+        hScore, hLabel, durStr,
+        durationSec: timeToSec(durStr), url,
+        aiStatus: 'pending', aiResult: null
+      });
+    });
+    inp.value = '';
+    renderValList();
+    document.getElementById('valThreshWrap').style.display = '';
+    document.getElementById('valStats').style.display = '';
+  };
+  r.readAsArrayBuffer(f);
+}
+
+// 시간 점수 순수 함수 (UI 부작용 없음)
+function getTimeScoreVal(sec) {
+  const d = Math.round(sec) || 0;
+  if (!d) return 0;
+  if (d >= 180 && d <= 300) return 10;
+  if ((d >= 150 && d < 180) || (d > 300 && d <= 330)) return 7;
+  return (d >= 120 && d <= 360) ? 4 : 0;
+}
+
+// AI 분류 (100점 환산 후 임계값 적용)
+function aiLabel(total90) {
+  const pct = total90 / 90 * 100;
+  const t1 = parseInt(document.getElementById('thr1')?.value || 62);
+  const t2 = parseInt(document.getElementById('thr2')?.value || 70);
+  const t3 = parseInt(document.getElementById('thr3')?.value || 80);
+  if (pct < t1) return '탈락';
+  if (pct < t2) return '경계선';
+  if (pct < t3) return '합격';
+  return '고득점';
+}
+
+const VAL_LABEL_STYLE = {
+  '탈락':    'background:#fee2e2;color:#991b1b',
+  '경계선':  'background:#fef3c7;color:#92400e',
+  '합격':    'background:#d1fae5;color:#065f46',
+  '고득점':  'background:#dbeafe;color:#1e40af'
+};
+
+// 개별 AI 채점 (Phase1+Phase2+Phase3추정+Phase4)
+async function runValScore(item) {
+  const apiKey = localStorage.getItem('apiKey');
+  if (!apiKey) { showApiModal(); return; }
+
+  const grade = item.grade;
+  const p = PD[grade]?.[item.prob - 1] || {};
+  const dur = item.durationSec || 0;
+  const durFmt = fmt(dur);
+  const isElem = grade.startsWith('초');
+  const gradeCtx = getPrompt(grade, 'gradeCtx');
+  const teacherPersona = getPrompt(grade, 'teacherPersona');
+  const peerPersona = getPrompt(grade, 'peerPersona');
+
+  const pr1 = `당신은 수학말하기대회 전문 심사위원입니다. 아래 기준표에 따라 정량 채점하세요.
+
+[발표 정보]
+학년: ${grade} / 문항: ${p.title||''}
+문제: ${p.q||''}
+정답: ${p.ans||''}
+핵심 풀이 포인트: ${p.kp||''}
+필수용어(${(p.terms||[]).length}개): ${(p.terms||[]).join(', ')}
+${p.concept?`필수개념: ${p.concept}`:''}
+${p.solution?`해설:\n${p.solution}`:''}
+실제 발표시간: ${durFmt}
+팀명: ${item.team}
+
+[발표 목적]
+수학말하기대회는 풀이 과정 발표입니다. 개념 강의가 아닙니다.
+
+[학년별 평가 기준]
+${gradeCtx}
+
+━━ 채점 기준 앙커 (3000명 참가) ━━
+⚠️ 5~6점=평균. 9~10점은 상위 5%에만.
+
+개념선정: 5~6점=핵심개념 피상적·활용약함, 7~8점=적절선정·전반활용, 9~10점=심화연결까지
+용어정리: 5~6점=60~79%사용, 7~8점=80%이상, 9~10점=100%자연스럽게
+정확성: 5~6점=방향맞으나오류1개결론영향, 7~8점=오류없거나비핵심오류1개, 9~10점=완전정확
+논리성: 5~6점=흐름있으나핵심단계생략, 7~8점=전체논리적연결, 9~10점=완벽연결예측가능
+
+JSON만 응답:
+{"개념선정":숫자,"용어정리":숫자,"정확성":숫자,"논리성":숫자}`;
+
+  const pr3 = `당신은 수학말하기대회 AI 심사위원단입니다.
+
+[발표 정보]
+학년: ${grade} / 문항: ${p.title||''}
+문제: ${p.q||''} / 핵심풀이: ${p.kp||''}
+${p.altSolution?`다른풀이: ${p.altSolution}`:''}
+발표시간: ${durFmt} / 팀명: ${item.team}
+
+[3000명 참가 — 변별 원칙]
+5~6점=평균. 8점이상=상위20%. 9~10점=상위5%.
+
+━━ 수학교사 페르소나 ━━
+${teacherPersona}
+
+━━ 또래학생 페르소나 ━━
+${peerPersona}
+
+━━ 예시 채점 (교사 관점) ━━
+5~6점=풀이만진행추가예시없음(평균), 7점=풀이범위내간단예시, 8점=풀이외예시1개이상, 9~10점=심화연결
+
+━━ 흥미유발 채점 (또래 관점) ━━
+5~6점=단조롭고반복적(평균), 7점=무난하나인상없음, 8점=명쾌해서흥미로운수준, 9~10점=오그렇구나반응
+
+━━ 또래이해 채점 (또래 관점) ━━
+5~6점=추가설명필요한구간있음(평균), 7점=약간어려운구간, 8점=대체로따라갈수있음, 9~10점=완전이해
+
+JSON만 응답:
+{"예시":숫자,"흥미유발":숫자,"또래이해":숫자}`;
+
+  const timeScore = getTimeScoreVal(dur);
+  const boardScore = dur >= 180 && dur <= 300 ? 7 : (dur >= 150 && dur <= 330 ? 6 : 4);
+  const speakScore = boardScore;
+
+  const [[r1a, r1b], [r3a, r3b]] = await Promise.all([
+    Promise.all([callTextAI(pr1), callTextAI(pr1)]),
+    Promise.all([callTextAI(pr3), callTextAI(pr3)])
+  ]);
+
+  const r1m = avgTwo(r1a, r1b, ['개념선정','용어정리','정확성','논리성']);
+  const r3m = avgTwo(r3a, r3b, ['예시','흥미유발','또래이해']);
+
+  const concept = clamp(r1m.개념선정 ?? 6);
+  const term    = clamp(r1m.용어정리 ?? 6);
+  const acc     = clamp(r1m.정확성 ?? 6);
+  const logic   = clamp(r1m.논리성 ?? 6);
+  const ex      = clamp(r3m.예시 ?? 6);
+  const eng     = clamp(r3m.흥미유발 ?? 6);
+  const peer    = clamp(r3m.또래이해 ?? 6);
+  const total   = concept + term + acc + logic + timeScore + boardScore + speakScore + ex + eng + peer;
+
+  return { concept, term, acc, logic, time: timeScore, board: boardScore, speak: speakScore, ex, eng, peer, total };
+}
+
+// 단일 항목 AI 채점 실행
+async function scoreValItem(i) {
+  const item = valData[i];
+  if (!item) return;
+  item.aiStatus = 'loading';
+  renderValList();
+  try {
+    item.aiResult = await runValScore(item);
+    item.aiStatus = 'done';
+  } catch(e) {
+    item.aiStatus = 'error';
+    item.aiError = e.message;
+  }
+  renderValList();
+}
+
+// 전체 일괄 AI 채점
+let valBatchRunning = false;
+async function scoreValAll() {
+  if (valBatchRunning) return;
+  valBatchRunning = true;
+  const btn = document.getElementById('valBatchBtn');
+  if (btn) btn.textContent = '⏸ 채점 중...';
+  for (let i = 0; i < valData.length; i++) {
+    if (!valBatchRunning) break;
+    if (valData[i].aiStatus !== 'done') {
+      valData[i].aiStatus = 'loading';
+      renderValList();
+      try {
+        valData[i].aiResult = await runValScore(valData[i]);
+        valData[i].aiStatus = 'done';
+      } catch(e) {
+        valData[i].aiStatus = 'error';
+      }
+      renderValList();
+      await new Promise(r => setTimeout(r, 500));
+    }
+  }
+  valBatchRunning = false;
+  if (btn) btn.textContent = '🤖 전체 AI 채점';
+  renderValList();
+}
+function stopValBatch() { valBatchRunning = false; }
+
+// 목록 렌더 + 통계
+function renderValList() {
+  const el = document.getElementById('valList');
+  if (!el) return;
+  if (!valData.length) return;
+
+  // ── 통계 계산 ───────────────────────────────────────────────
+  const done = valData.filter(d => d.aiStatus === 'done');
+  let match = 0, total = done.length;
+  const confusion = {}; // {human: {ai: count}}
+  done.forEach(d => {
+    const aLabel = aiLabel(d.aiResult.total);
+    const hLabel = d.hLabel;
+    if (!confusion[hLabel]) confusion[hLabel] = {};
+    confusion[hLabel][aLabel] = (confusion[hLabel][aLabel] || 0) + 1;
+    if (aLabel === hLabel) match++;
+  });
+  const acc = total ? Math.round(match / total * 100) : 0;
+
+  const statsEl = document.getElementById('valStats');
+  if (statsEl) {
+    statsEl.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">
+        <div class="sb"><div class="sbn">${valData.length}</div><div class="sbl">전체 건수</div></div>
+        <div class="sb"><div class="sbn" style="color:var(--cg)">${done.length}</div><div class="sbl">AI 채점 완료</div></div>
+        <div class="sb"><div class="sbn" style="color:var(--ci)">${acc}%</div><div class="sbl">분류 일치율</div></div>
+        <div class="sb"><div class="sbn">${match}/${total}</div><div class="sbl">일치 / 완료</div></div>
+      </div>
+      ${total >= 4 ? renderConfusion(confusion) : ''}
+    `;
+  }
+
+  // ── 테이블 헤더 ─────────────────────────────────────────────
+  const GRADE_COLS = ['초4','초5','초6','중1','중2','중3'];
+  const sorted = [...valData].sort((a,b) => {
+    const gi = g => GRADE_COLS.indexOf(g) >= 0 ? GRADE_COLS.indexOf(g) : 99;
+    return gi(a.grade) - gi(b.grade) || a.prob - b.prob || a.idx - b.idx;
+  });
+
+  const pending = valData.filter(d => d.aiStatus !== 'done').length;
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bs);border-bottom:.5px solid var(--bt);flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:500">총 ${valData.length}건</span>
+      ${pending > 0 ? `<button id="valBatchBtn" onclick="scoreValAll()" style="padding:3px 10px;border-radius:6px;border:none;background:#1d4ed8;color:#fff;font-size:11px;cursor:pointer;font-family:inherit">🤖 전체 AI 채점 (${pending}건 남음)</button>` : ''}
+      ${valBatchRunning ? `<button onclick="stopValBatch()" style="padding:3px 10px;border-radius:6px;border:none;background:#ef4444;color:#fff;font-size:11px;cursor:pointer;font-family:inherit">⏹ 중지</button>` : ''}
+      <span style="font-size:10px;color:var(--cs)">※ Phase3(판서·말하기)는 발표시간 기반 추정값 — 영상 직접 확인 권장</span>
+    </div>
+    <div style="display:grid;grid-template-columns:36px 1fr 56px 40px 60px 80px 80px 64px;background:var(--bs);border-bottom:.5px solid var(--bt);font-size:10px;font-weight:500;color:var(--cs)">
+      <div style="padding:5px 6px">#</div>
+      <div style="padding:5px 6px">팀명</div>
+      <div style="padding:5px 6px;text-align:center">학년/문항</div>
+      <div style="padding:5px 6px;text-align:center">시간</div>
+      <div style="padding:5px 6px;text-align:center">사람 점수</div>
+      <div style="padding:5px 6px;text-align:center">사람 분류</div>
+      <div style="padding:5px 6px;text-align:center">AI 점수(/90)</div>
+      <div style="padding:5px 6px;text-align:center">AI 분류</div>
+    </div>
+    ${sorted.map((item, idx) => renderValRow(item, idx)).join('')}
+  `;
+}
+
+function renderConfusion(confusion) {
+  const labels = ['탈락','경계선','합격','고득점'];
+  const present = labels.filter(l => confusion[l] || Object.values(confusion).some(v => v[l]));
+  if (present.length < 2) return '';
+  let html = `<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:10px;margin-top:4px">
+    <tr><th style="padding:3px 6px;background:var(--bs);border:.5px solid var(--bt)">사람↓ / AI→</th>`;
+  present.forEach(l => { html += `<th style="padding:3px 8px;background:var(--bs);border:.5px solid var(--bt)">${l}</th>`; });
+  html += '</tr>';
+  present.forEach(hL => {
+    html += `<tr><td style="padding:3px 6px;font-weight:500;border:.5px solid var(--bt);background:var(--bs)">${hL}</td>`;
+    present.forEach(aL => {
+      const cnt = (confusion[hL]||{})[aL] || 0;
+      const isDiag = hL === aL;
+      html += `<td style="padding:3px 8px;text-align:center;border:.5px solid var(--bt);${isDiag && cnt ? 'background:#d1fae5;font-weight:600' : cnt ? 'background:#fee2e2' : ''}">${cnt || '-'}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</table></div>';
+  return html;
+}
+
+function renderValRow(item, displayIdx) {
+  const aiPct = item.aiResult ? Math.round(item.aiResult.total / 90 * 100) : null;
+  const aL = item.aiResult ? aiLabel(item.aiResult.total) : null;
+  const match = aL && aL === item.hLabel;
+  const hStyle = VAL_LABEL_STYLE[item.hLabel] || 'background:var(--bs);color:var(--cs)';
+  const aStyle = aL ? (VAL_LABEL_STYLE[aL] || '') : '';
+  const rowBg = item.aiStatus === 'done' ? (match ? '' : 'background:#fff7f7') : '';
+
+  let aiCell = '';
+  if (item.aiStatus === 'pending') {
+    aiCell = `<button onclick="scoreValItem(${item.idx})" style="font-size:10px;padding:2px 7px;border-radius:4px;border:.5px solid var(--ci);color:var(--ci);background:transparent;cursor:pointer;font-family:inherit">채점</button>`;
+  } else if (item.aiStatus === 'loading') {
+    aiCell = '<span style="font-size:10px;color:var(--cs)">⏳ 채점중...</span>';
+  } else if (item.aiStatus === 'done') {
+    aiCell = `<span style="font-size:12px;font-weight:600;color:var(--ci)">${item.aiResult.total}</span><span style="font-size:9px;color:var(--cs)"> (${aiPct}%)</span>`;
+  } else {
+    aiCell = '<span style="font-size:10px;color:#ef4444">오류</span>';
+  }
+
+  const matchBadge = item.aiStatus === 'done'
+    ? `<span style="font-size:9px;padding:1px 5px;border-radius:20px;${match ? 'background:#d1fae5;color:#065f46' : 'background:#fee2e2;color:#991b1b'}">${match ? '✓ 일치' : '✗ 불일치'}</span>`
+    : '';
+
+  return `<div style="display:grid;grid-template-columns:36px 1fr 56px 40px 60px 80px 80px 64px;border-bottom:.5px solid var(--bt);font-size:11px;${rowBg}" title="${item.aiResult ? `AI: 개념${item.aiResult.concept}/용어${item.aiResult.term}/정확성${item.aiResult.acc}/논리성${item.aiResult.logic}/시간${item.aiResult.time}/판서${item.aiResult.board}/말하기${item.aiResult.speak}/예시${item.aiResult.ex}/흥미${item.aiResult.eng}/또래${item.aiResult.peer}` : ''}">
+    <div style="padding:6px 6px;color:var(--cs)">${displayIdx + 1}</div>
+    <div style="padding:6px 6px">
+      <div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.team}</div>
+      <div style="font-size:10px;color:var(--cs)">${item.member !== item.team ? item.member.slice(0,20) : ''}</div>
+      ${matchBadge}
+    </div>
+    <div style="padding:6px 4px;text-align:center;color:var(--cs)">${item.grade}<br>${item.prob}번</div>
+    <div style="padding:6px 4px;text-align:center;color:var(--cs)">${item.durStr||'-'}</div>
+    <div style="padding:6px 4px;text-align:center;font-weight:600">${item.hScore ? item.hScore.toFixed(1) : '-'}</div>
+    <div style="padding:5px 4px;text-align:center"><span style="font-size:10px;padding:2px 6px;border-radius:20px;${hStyle}">${item.hLabel||'-'}</span></div>
+    <div style="padding:6px 4px;text-align:center">${aiCell}</div>
+    <div style="padding:5px 4px;text-align:center">${aL ? `<span style="font-size:10px;padding:2px 6px;border-radius:20px;${aStyle}">${aL}</span>` : ''}</div>
+  </div>`;
 }
 
 const uz=document.getElementById('upZone');
