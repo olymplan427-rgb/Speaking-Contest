@@ -404,7 +404,13 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
   <div class="jtop">
     <div style="min-width:0">
       <div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="jTeam">-</div>
-      <div style="font-size:10px;color:var(--cs)" id="jInfo">-</div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <div style="font-size:10px;color:var(--cs)" id="jInfo">-</div>
+        <div style="display:flex;gap:2px;flex-shrink:0">
+          <button id="ptgPan" onclick="setPresentType('판서')" style="font-size:10px;padding:1px 6px;border-radius:3px;border:1px solid var(--cs);background:transparent;color:var(--cs);cursor:pointer">✏️ 판서</button>
+          <button id="ptgPpt" onclick="setPresentType('PPT')" style="font-size:10px;padding:1px 6px;border-radius:3px;border:1px solid var(--cs);background:transparent;color:var(--cs);cursor:pointer">📊 PPT</button>
+        </div>
+      </div>
     </div>
     <div class="pb"><div class="pf" id="progF" style="width:0%"></div></div>
     <span style="font-size:10px;color:var(--cs);white-space:nowrap" id="progT">0/0</span>
@@ -750,6 +756,22 @@ let revSort='접수순';
 
 function setRevSort(s){revSort=s;renderReview();}
 
+function setPresentType(t){
+  if(curI<0||curI>=queue.length)return;
+  const q=queue[curI];
+  q.presentType=(q.presentType===t)?null:t; // 재클릭 시 해제
+  updPresentTypeBtns(q.presentType);
+  renderReview();
+}
+function updPresentTypeBtns(t){
+  const pan=document.getElementById('ptgPan');
+  const ppt=document.getElementById('ptgPpt');
+  if(!pan||!ppt)return;
+  const onStyle='font-weight:600;border-width:2px;';
+  pan.style.cssText=`font-size:10px;padding:1px 6px;border-radius:3px;cursor:pointer;border:${t==='판서'?'2px solid #059669;background:#d1fae5;color:#065f46':'1px solid var(--cs);background:transparent;color:var(--cs)'};`;
+  ppt.style.cssText=`font-size:10px;padding:1px 6px;border-radius:3px;cursor:pointer;border:${t==='PPT'?'2px solid #7c3aed;background:#ede9fe;color:#4c1d95':'1px solid var(--cs);background:transparent;color:var(--cs)'};`;
+}
+
 function renderReview(){
   const tot=queue.length;
   if(!tot){document.getElementById('statGrid').innerHTML='';document.getElementById('revList').innerHTML='<div style="padding:20px;text-align:center;color:var(--cs)">업로드된 데이터가 없습니다.</div>';return;}
@@ -791,6 +813,7 @@ function renderReview(){
       <div style="text-align:center;font-size:11px">${q.duration||'-'}</div>
       <div style="text-align:center;font-size:11px">${scoreCell}</div>
       <div style="text-align:center;font-size:10px">${q.status2==='done'?'✅완료':'<span style="color:var(--cs)">대기</span>'}</div>
+      <div style="text-align:center">${q.presentType==='판서'?'<span style="font-size:10px;padding:1px 5px;border-radius:3px;background:#d1fae5;color:#065f46;font-weight:600">✏️판서</span>':q.presentType==='PPT'?'<span style="font-size:10px;padding:1px 5px;border-radius:3px;background:#ede9fe;color:#4c1d95;font-weight:600">📊PPT</span>':'<span style="font-size:10px;color:var(--cs)">-</span>'}</div>
     </div>`;
   }).join('');
   document.getElementById('revList').innerHTML=rows+(indexed.length>150?`<div style="padding:8px;text-align:center;font-size:11px;color:var(--cs)">+ ${indexed.length-150}건 더 있음</div>`:'');
@@ -1198,6 +1221,7 @@ function jQ(i){
   document.getElementById('vUrl').value=q.url||'';
   document.getElementById('jTeam').textContent=`${q.teamName}${q.members&&q.members!==q.teamName?' / '+q.members:''}`;
   document.getElementById('jInfo').textContent=`${q.brand||''} ${q.campus||''} · ${q.grade||''} · ${q.problem}번 · ${q.duration||'-'} · ${q.type}`;
+  updPresentTypeBtns(q.presentType);
   cGr=q.grade||'중1';cPr=q.problem;
   loadProb(cGr,cPr);
   resetVid();
@@ -2123,7 +2147,7 @@ function doXL(){
   const done=queue.filter(q=>q.result);if(!done.length){alert('채점된 결과가 없습니다.');return;}
   const rows=queue.map(q=>{
     const r=q.result;
-    const base={'접수일':q.date,'브랜드':q.brand,'캠퍼스':q.campus,'학년':q.grade,'팀명':q.teamName,'팀원':q.members,'참가유형':q.type,'발표문제':q.problem+'번','영상주소':q.url,'영상시간':q.duration,'좋아요수':q.likes,'접수상태':q.status};
+    const base={'접수일':q.date,'브랜드':q.brand,'캠퍼스':q.campus,'학년':q.grade,'팀명':q.teamName,'팀원':q.members,'참가유형':q.type,'발표방식':q.presentType||'-','발표문제':q.problem+'번','영상주소':q.url,'영상시간':q.duration,'좋아요수':q.likes,'접수상태':q.status};
     if(!r)return{...base,'채점상태':'미완료'};
     return{...base,'채점상태':'완료','Vision채점여부':r.visionUsed?'O(영상캡처)':'X(텍스트추정)',
       '개념선정':r.scores.개념선정,'용어정리':r.scores.용어정리,'개념적절성계':r.totals.개념적절성,'개념채점사유':r.reasons.개념,
