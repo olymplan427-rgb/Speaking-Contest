@@ -209,6 +209,7 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
       <button class="btn bsc" style="font-size:11px" onclick="showApiModal()">🔑 API 키 설정</button>
       <span id="apiSt1" style="font-size:11px;align-self:center"></span>
       <button class="btn bsc" style="font-size:11px" onclick="showPdMgr()">📚 문제 데이터 등록</button>
+      <button class="btn bsc" style="font-size:11px" onclick="showView('v5')">🎭 페르소나 설정</button>
     </div>
   </div>
 </div>
@@ -344,6 +345,27 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
       <button class="btn bpr" onclick="saveProbModal()">저장</button>
     </div>
   </div>
+</div>
+</div>
+
+<!-- VIEW 5: Prompt Settings -->
+<div id="v5" class="view">
+<div class="pdw">
+  <div class="pd-header">
+    <button class="btn bsc" onclick="showView('v1')" style="font-size:11px;flex-shrink:0">← 돌아가기</button>
+    <div>
+      <div style="font-size:16px;font-weight:500">🎭 페르소나 & 프롬프트 설정</div>
+      <div style="font-size:11px;color:var(--cs);margin-top:2px">학년별 교사·또래 페르소나 및 평가 맥락을 수정합니다. 저장 후 AI 채점에 즉시 반영됩니다.</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:6px">
+      <button class="btn" style="font-size:11px;background:#d1fae5;color:#065f46;border:none" onclick="savePromptCfg()">💾 전체 저장</button>
+      <button class="btn bsc" style="font-size:11px" onclick="resetPromptCfg()">↺ 초기화</button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:4px;padding:12px 0 0;flex-wrap:wrap" id="promptGradeTabs"></div>
+
+  <div id="promptEditor" style="padding:16px 0"></div>
 </div>
 </div>
 
@@ -707,9 +729,9 @@ async function extractFramesFromServer(url, durationSec){
 
 // ── 뷰 전환 ───────────────────────────────────────────────────
 function showView(id){
-  ['v1','v2','v3','v4'].forEach(v=>{const el=document.getElementById(v);if(el){el.classList.remove('on');el.style.display='none';}});
+  ['v1','v2','v3','v4','v5'].forEach(v=>{const el=document.getElementById(v);if(el){el.classList.remove('on');el.style.display='none';}});
   const el=document.getElementById(id);if(el){el.style.display='';el.classList.add('on');}
-  if(id==='v2')renderReview();if(id==='v1')updApiSt();if(id==='v4')renderPdMgr();
+  if(id==='v2')renderReview();if(id==='v1')updApiSt();if(id==='v4')renderPdMgr();if(id==='v5')renderPromptEditor();
 }
 function showApiModal(){document.getElementById('apiModal').classList.add('on');document.getElementById('apiKeyInp').value=localStorage.getItem('apiKey')||'';}
 function closeApiModal(){document.getElementById('apiModal').classList.remove('on');}
@@ -824,6 +846,88 @@ const PD_GRADES=['초등4','초등5','초등6','중1','중2','중3'];
 let _pdGr='중1'; // 현재 선택 학년
 
 function showPdMgr(){showView('v4');}
+
+// ── 페르소나·프롬프트 설정 ────────────────────────────────────
+const PROMPT_DEFAULT={
+  '초4':{
+    gradeCtx:`이 학생은 초4 수준입니다. 큰 수·각도·규칙·소수·도형 단원 범위에서 평가합니다.\n초등 수준에서 기대하는 개념 깊이·용어 수·논리 전개를 기준으로 채점하십시오.\n중학교 수준의 기호·증명·추상 개념 부재는 감점 불가. 초등 교육과정 내 완성도를 평가합니다.\n개념선정: 해당 단원의 핵심 개념을 초4 수준에서 정확히 선정했는지 판단.\n정확성: 초등 교육과정 풀이 방식 내에서 계산·설명이 맞는지.\n논리성: 초4 학생이 이해할 수 있는 단계적 설명 흐름인지 (그림→수식→결론 같은 직관적 전개 허용).`,
+    teacherPersona:`당신은 초등학교 수학 교사(경력 10년 이상)입니다.\n초등 교육과정(수와 연산·도형·측정·규칙성·자료와 가능성) 범위 안에서 학생의 예시·창의성을 평가합니다.\n초등 수준에서 인상적인 예시 기준: 일상 소재(물건·요리·게임 등)를 수학과 자연스럽게 연결하거나, 같은 개념을 다른 맥락에 적용한 시도.\n중등 개념 미사용은 감점 불가. 초등 교육과정 내 창의성 기준 적용.`,
+    peerPersona:`당신은 초4 또래 초등학생입니다.\n같은 학년 눈높이에서 이 발표가 얼마나 흥미롭고 이해하기 쉬운지 평가합니다.\n초4 기준 흥미 요소: 익숙한 물건·놀이·일상과 연결, "와 신기하다!" 반응이 나오는 발견 순간, 그림·도형으로 직관적으로 보여주는 설명.\n초4 기준 이해 장치: 쉬운 말로 단계별 설명, 그림으로 먼저 보여주고 수식 설명, 비슷한 상황에 빗대는 비유.`
+  },
+  '초5':{
+    gradeCtx:`이 학생은 초5 수준입니다. 공배수·규칙·분수·소수·직육면체 단원 범위에서 평가합니다.\n초등 수준에서 기대하는 개념 깊이·용어 수·논리 전개를 기준으로 채점하십시오.\n중학교 수준의 기호·증명·추상 개념 부재는 감점 불가. 초등 교육과정 내 완성도를 평가합니다.\n개념선정: 해당 단원의 핵심 개념을 초5 수준에서 정확히 선정했는지 판단.\n정확성: 초등 교육과정 풀이 방식 내에서 계산·설명이 맞는지.\n논리성: 초5 학생이 이해할 수 있는 단계적 설명 흐름인지.`,
+    teacherPersona:`당신은 초등학교 수학 교사(경력 10년 이상)입니다.\n초등 교육과정(수와 연산·도형·측정·규칙성·자료와 가능성) 범위 안에서 학생의 예시·창의성을 평가합니다.\n초등 수준에서 인상적인 예시 기준: 일상 소재(물건·요리·게임 등)를 수학과 자연스럽게 연결하거나, 같은 개념을 다른 맥락에 적용한 시도.\n중등 개념 미사용은 감점 불가. 초등 교육과정 내 창의성 기준 적용.`,
+    peerPersona:`당신은 초5 또래 초등학생입니다.\n같은 학년 눈높이에서 이 발표가 얼마나 흥미롭고 이해하기 쉬운지 평가합니다.\n초5 기준 흥미 요소: 익숙한 물건·놀이·일상과 연결, "와 신기하다!" 반응이 나오는 발견 순간, 그림·도형으로 직관적으로 보여주는 설명.\n초5 기준 이해 장치: 쉬운 말로 단계별 설명, 그림으로 먼저 보여주고 수식 설명, 비슷한 상황에 빗대는 비유.`
+  },
+  '초6':{
+    gradeCtx:`이 학생은 초6 수준입니다. 분수나눗셈·각기둥·비율·소수나눗셈·비례 단원 범위에서 평가합니다.\n초등 수준에서 기대하는 개념 깊이·용어 수·논리 전개를 기준으로 채점하십시오.\n중학교 수준의 기호·증명·추상 개념 부재는 감점 불가. 초6 교육과정 내 완성도를 평가합니다.\n개념선정: 해당 단원의 핵심 개념을 초6 수준에서 정확히 선정했는지 판단.\n정확성: 초등 교육과정 풀이 방식 내에서 계산·설명이 맞는지.\n논리성: 초6 학생이 이해할 수 있는 단계적 설명 흐름인지.`,
+    teacherPersona:`당신은 초등학교 수학 교사(경력 10년 이상)입니다.\n초등 교육과정(수와 연산·도형·측정·규칙성·자료와 가능성) 범위 안에서 학생의 예시·창의성을 평가합니다.\n초등 수준에서 인상적인 예시 기준: 일상 소재(물건·요리·게임 등)를 수학과 자연스럽게 연결하거나, 같은 개념을 다른 맥락에 적용한 시도.\n중등 개념 미사용은 감점 불가. 초등 교육과정 내 창의성 기준 적용.`,
+    peerPersona:`당신은 초6 또래 초등학생입니다.\n같은 학년 눈높이에서 이 발표가 얼마나 흥미롭고 이해하기 쉬운지 평가합니다.\n초6 기준 흥미 요소: 익숙한 물건·놀이·일상과 연결, "와 신기하다!" 반응이 나오는 발견 순간, 그림·도형으로 직관적으로 보여주는 설명.\n초6 기준 이해 장치: 쉬운 말로 단계별 설명, 그림으로 먼저 보여주고 수식 설명, 비슷한 상황에 빗대는 비유.`
+  },
+  '중1':{
+    gradeCtx:`이 학생은 중1 수준입니다. 소인수분해·정수유리수·문자와 식·정비례반비례·기본도형·다각형 단원 범위에서 평가합니다.\n중학교 수준에서 기대하는 수학적 엄밀성·용어 정확성·논리 전개를 기준으로 채점하십시오.\n개념선정: 중1 교육과정 내 핵심 개념을 정확히 선정하고 풀이 전반에서 활용했는지 판단.\n정확성: 수식·계산·표현이 중1 수학 기준에서 오류 없는지.\n논리성: 가정→전개→결론의 수학적 인과 연결이 명확한지.`,
+    teacherPersona:`당신은 중학교 수학 교사(경력 10년 이상)입니다.\n중학 교육과정(수·문자와 식·함수·기하·통계) 범위에서 학생의 예시·창의성을 평가합니다.\n중1 수준에서 인상적인 예시 기준: 풀이 범위를 넘어선 개념 연결(다른 단원 연계·심화 적용), 수학적으로 정확한 일반화·확장 시도.\n고등 개념 미사용은 감점 불가. 중1 교육과정 내 창의성 기준 적용.`,
+    peerPersona:`당신은 중1 또래 중학생입니다.\n같은 학년 눈높이에서 이 발표가 얼마나 흥미롭고 이해하기 쉬운지 평가합니다.\n중1 기준 흥미 요소: "이 개념이 이렇게도 쓰이는구나" 싶은 연결, 예상치 못한 풀이 방법, 수학적 아름다움이 느껴지는 순간.\n중1 기준 이해 장치: 논리적 흐름이 명확한 단계별 전개, 수식의 의미를 말로 설명, 개념 간 연결 설명.`
+  },
+  '중2':{
+    gradeCtx:`이 학생은 중2 수준입니다. 일차부등식·연립방정식·일차함수·외심내심·닮음 단원 범위에서 평가합니다.\n중학교 수준에서 기대하는 수학적 엄밀성·용어 정확성·논리 전개를 기준으로 채점하십시오.\n개념선정: 중2 교육과정 내 핵심 개념을 정확히 선정하고 풀이 전반에서 활용했는지 판단.\n정확성: 수식·계산·표현이 중2 수학 기준에서 오류 없는지.\n논리성: 가정→전개→결론의 수학적 인과 연결이 명확한지.`,
+    teacherPersona:`당신은 중학교 수학 교사(경력 10년 이상)입니다.\n중학 교육과정(수·문자와 식·함수·기하·통계) 범위에서 학생의 예시·창의성을 평가합니다.\n중2 수준에서 인상적인 예시 기준: 풀이 범위를 넘어선 개념 연결(다른 단원 연계·심화 적용), 수학적으로 정확한 일반화·확장 시도.\n고등 개념 미사용은 감점 불가. 중2 교육과정 내 창의성 기준 적용.`,
+    peerPersona:`당신은 중2 또래 중학생입니다.\n같은 학년 눈높이에서 이 발표가 얼마나 흥미롭고 이해하기 쉬운지 평가합니다.\n중2 기준 흥미 요소: "이 개념이 이렇게도 쓰이는구나" 싶은 연결, 예상치 못한 풀이 방법, 수학적 아름다움이 느껴지는 순간.\n중2 기준 이해 장치: 논리적 흐름이 명확한 단계별 전개, 수식의 의미를 말로 설명, 개념 간 연결 설명.`
+  },
+  '중3':{
+    gradeCtx:`이 학생은 중3 수준입니다. 다항식곱셈·이차방정식·이차함수·삼각비·원주각 단원 범위에서 평가합니다.\n중학교 수준에서 기대하는 수학적 엄밀성·용어 정확성·논리 전개를 기준으로 채점하십시오.\n개념선정: 중3 교육과정 내 핵심 개념을 정확히 선정하고 풀이 전반에서 활용했는지 판단.\n정확성: 수식·계산·표현이 중3 수학 기준에서 오류 없는지.\n논리성: 가정→전개→결론의 수학적 인과 연결이 명확한지.`,
+    teacherPersona:`당신은 중학교 수학 교사(경력 10년 이상)입니다.\n중학 교육과정(수·문자와 식·함수·기하·통계) 범위에서 학생의 예시·창의성을 평가합니다.\n중3 수준에서 인상적인 예시 기준: 풀이 범위를 넘어선 개념 연결(다른 단원 연계·심화 적용), 수학적으로 정확한 일반화·확장 시도.\n고등 개념 미사용은 감점 불가. 중3 교육과정 내 창의성 기준 적용.`,
+    peerPersona:`당신은 중3 또래 중학생입니다.\n같은 학년 눈높이에서 이 발표가 얼마나 흥미롭고 이해하기 쉬운지 평가합니다.\n중3 기준 흥미 요소: "이 개념이 이렇게도 쓰이는구나" 싶은 연결, 예상치 못한 풀이 방법, 수학적 아름다움이 느껴지는 순간.\n중3 기준 이해 장치: 논리적 흐름이 명확한 단계별 전개, 수식의 의미를 말로 설명, 개념 간 연결 설명.`
+  }
+};
+let promptCfg={};
+function loadPromptCfg(){try{const s=localStorage.getItem('mathJudgePrompts');promptCfg=s?JSON.parse(s):{};}catch(e){promptCfg={};}}
+function savePromptCfg(){
+  const gr=document.querySelector('#promptGradeTabs .ptab.on')?.dataset.gr;
+  if(!gr)return;
+  ['gradeCtx','teacherPersona','peerPersona'].forEach(k=>{
+    const el=document.getElementById('pc_'+k);
+    if(el){if(!promptCfg[gr])promptCfg[gr]={};promptCfg[gr][k]=el.value;}
+  });
+  try{localStorage.setItem('mathJudgePrompts',JSON.stringify(promptCfg));alert('✅ 저장 완료! 다음 채점부터 반영됩니다.');}catch(e){alert('저장 실패: '+e.message);}
+}
+function resetPromptCfg(){
+  if(!confirm('모든 학년의 프롬프트를 기본값으로 초기화할까요?'))return;
+  promptCfg={};localStorage.removeItem('mathJudgePrompts');
+  renderPromptEditor();alert('초기화 완료.');
+}
+function getPrompt(gr,key){return (promptCfg[gr]&&promptCfg[gr][key])||PROMPT_DEFAULT[gr]?.[key]||'';}
+let _curPromptGr='초4';
+function renderPromptEditor(){
+  loadPromptCfg();
+  const tabs=document.getElementById('promptGradeTabs');
+  const grades=['초4','초5','초6','중1','중2','중3'];
+  tabs.innerHTML=grades.map(g=>`<button class="ptab btn bsc${g===_curPromptGr?' on':''}" data-gr="${g}" onclick="_curPromptGr='${g}';renderPromptEditor()" style="font-size:12px;padding:5px 12px${g===_curPromptGr?';background:var(--ci);color:#fff;border-color:var(--ci)':''}">${g}</button>`).join('');
+  const gr=_curPromptGr;
+  const fields=[
+    {key:'gradeCtx',label:'학년 평가 맥락',desc:'이 학년의 수준·범위·채점 관점을 AI에게 전달합니다. (Phase 1·2 정량 채점에 사용)'},
+    {key:'teacherPersona',label:'교사 페르소나',desc:'교사 시각에서 예시·창의성을 평가하는 역할을 정의합니다. (Phase 4 창의성 채점에 사용)'},
+    {key:'peerPersona',label:'또래 페르소나',desc:'같은 학년 학생 시각에서 흥미·이해도를 평가하는 역할을 정의합니다. (Phase 4 창의성 채점에 사용)'}
+  ];
+  document.getElementById('promptEditor').innerHTML=fields.map(f=>`
+    <div style="margin-bottom:20px">
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+        <span style="font-size:13px;font-weight:500">${f.label}</span>
+        <span style="font-size:11px;color:var(--cs)">${f.desc}</span>
+      </div>
+      <textarea id="pc_${f.key}" rows="7" style="width:100%;font-size:12px;padding:10px;border:1px solid var(--cb);border-radius:6px;background:var(--bg);color:var(--ct);resize:vertical;line-height:1.6;font-family:monospace">${getPrompt(gr,f.key)}</textarea>
+    </div>`).join('')+`<div style="display:flex;gap:8px;padding-top:4px">
+    <button class="btn" onclick="savePromptCfg()" style="background:#d1fae5;color:#065f46;border:none;font-size:13px;padding:8px 20px">💾 이 학년 저장</button>
+    <button class="btn bsc" onclick="resetOnePrompt('${gr}')" style="font-size:13px;padding:8px 14px">↺ ${gr} 초기화</button>
+  </div>`;
+}
+function resetOnePrompt(gr){
+  if(!confirm(`${gr} 프롬프트를 기본값으로 초기화할까요?`))return;
+  delete promptCfg[gr];
+  localStorage.setItem('mathJudgePrompts',JSON.stringify(promptCfg));
+  renderPromptEditor();
+}
+loadPromptCfg();
 
 function savePD(){try{localStorage.setItem('mathJudgePD',JSON.stringify(PD));}catch(e){}}
 
@@ -1494,18 +1598,7 @@ async function runAI(hasVideo){
     setProgress('📊 개념·완성도 AI 채점 중... (2회 독립 병렬)', 35);
     const durFmt=detectedDuration?fmt(detectedDuration):(q.duration||'정보없음');
     const isElem=cGr.startsWith('초');
-    const gradeCtx=isElem
-      ? `【초등 학년 기준】 이 학생은 ${cGr} 수준의 개념 범위(사칙연산·분수·비율·기초 도형 등)를 발표합니다.
-초등 수준에서 기대하는 개념 깊이·용어 수·논리 전개를 기준으로 채점하십시오.
-중학교 수준의 기호·증명·추상 개념 부재는 감점 불가. 초등 교육과정 내에서의 완성도를 평가합니다.
-개념선정: 해당 단원의 핵심 개념을 초등 수준에서 정확히 선정했는지 판단 (예: 분수 나눗셈 → 역수 활용, 비율 → 기준량 대비 비교량).
-정확성: 초등 교육과정 풀이 방식 내에서 계산·설명이 맞는지 (중등 풀이법 미적용은 감점 불가).
-논리성: 초등 학생이 이해할 수 있는 단계적 설명 흐름인지 (그림→수식→결론 같은 직관적 전개 허용).`
-      : `【중등 학년 기준】 이 학생은 ${cGr} 수준의 개념 범위(방정식·함수·도형 증명·통계 등)를 발표합니다.
-중학교 수준에서 기대하는 수학적 엄밀성·용어 정확성·논리 전개를 기준으로 채점하십시오.
-개념선정: 중학 교육과정 내 핵심 개념을 정확히 선정하고 풀이 전반에서 일관되게 활용했는지 판단.
-정확성: 수식·계산·표현이 중학 수학 기준에서 오류 없는지 (증명 단계 생략 여부도 확인).
-논리성: 가정→전개→결론의 수학적 인과 연결이 명확한지, 개념 간 연결이 논리적으로 이어지는지.`;
+    const gradeCtx=getPrompt(cGr,'gradeCtx');
 
     const pr1=`당신은 수학말하기대회 전문 심사위원입니다. 아래 기준표에 따라 정량 채점하세요.
 
@@ -1706,25 +1799,8 @@ JSON만 응답:
     setProgress('🤖 AI 창의성 페르소나 채점 중... (2회 독립 병렬)', 80);
 
     // 초등/중등별 페르소나 정의
-    const teacherPersona = isElem
-      ? `당신은 초등학교 수학 교사(경력 10년 이상)입니다.
-초등 교육과정(수와 연산·도형·측정·규칙성·자료와 가능성) 범위 안에서 학생의 예시·창의성을 평가합니다.
-초등 수준에서 인상적인 예시 기준: 일상 소재(물건·요리·게임 등)를 수학과 자연스럽게 연결하거나, 같은 개념을 다른 맥락(다른 도형·다른 수 범위)에 적용한 시도.
-중등 개념(방정식·함수·증명 등) 미사용은 감점 불가. 초등 교육과정 내 창의성 기준 적용.`
-      : `당신은 중학교 수학 교사(경력 10년 이상)입니다.
-중학 교육과정(수·문자와 식·함수·기하·통계) 범위에서 학생의 예시·창의성을 평가합니다.
-중등 수준에서 인상적인 예시 기준: 풀이 범위를 넘어선 개념 연결(다른 단원 연계·심화 적용), 수학적으로 정확한 일반화·확장 시도.
-고등 개념 미사용은 감점 불가. 중학 교육과정 내 창의성 기준 적용.`;
-
-    const peerPersona = isElem
-      ? `당신은 ${cGr} 또래 초등학생입니다.
-같은 학년 학생 눈높이에서 이 발표가 얼마나 흥미롭고 이해하기 쉬운지 평가합니다.
-초등학생 기준 흥미 요소: 익숙한 물건·놀이·일상과 연결, "와 신기하다!" 반응이 나오는 발견 순간, 그림·도형으로 직관적으로 보여주는 설명.
-초등학생 기준 이해 장치: 쉬운 말로 단계별 설명, 그림으로 먼저 보여주고 수식 설명, 비슷한 상황에 빗대는 비유.`
-      : `당신은 ${cGr} 또래 중학생입니다.
-같은 학년 학생 눈높이에서 이 발표가 얼마나 흥미롭고 이해하기 쉬운지 평가합니다.
-중학생 기준 흥미 요소: "이 개념이 이렇게도 쓰이는구나" 싶은 연결, 예상치 못한 풀이 방법, 수학적 아름다움이 느껴지는 순간.
-중학생 기준 이해 장치: 논리적 흐름이 명확한 단계별 전개, 수식의 의미를 말로 설명, 개념 간 연결 설명.`;
+    const teacherPersona=getPrompt(cGr,'teacherPersona');
+    const peerPersona=getPrompt(cGr,'peerPersona');
 
     const pr3=`당신은 수학말하기대회 AI 심사위원단(3인 페르소나)입니다. 아래 기준표에 따라 채점하세요.
 
