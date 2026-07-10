@@ -35,9 +35,9 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
 .sb{padding:10px 12px;border-radius:8px;border:.5px solid var(--bt);background:var(--bp);text-align:center}
 .sbn{font-size:24px;font-weight:500;color:var(--ci)}.sbl{font-size:10px;color:var(--cs);margin-top:2px}
 .rtb{border:.5px solid var(--bt);border-radius:8px;overflow:hidden}
-.rth{display:grid;grid-template-columns:36px 1fr 90px 52px 52px 52px 64px 54px;background:var(--bs);border-bottom:.5px solid var(--bt);font-size:11px;font-weight:500}
+.rth{display:grid;grid-template-columns:36px 1fr 90px 52px 52px 52px 64px 54px 46px;background:var(--bs);border-bottom:.5px solid var(--bt);font-size:11px;font-weight:500}
 .rth div,.rr div{padding:6px 8px}
-.rr{display:grid;grid-template-columns:36px 1fr 90px 52px 52px 52px 64px 54px;border-bottom:.5px solid var(--bt);font-size:11px;cursor:pointer;transition:background .1s}
+.rr{display:grid;grid-template-columns:36px 1fr 90px 52px 52px 52px 64px 54px 46px;border-bottom:.5px solid var(--bt);font-size:11px;cursor:pointer;transition:background .1s}
 .rr:last-child{border-bottom:none}.rr:hover{background:var(--bs)}
 .rtbd{max-height:260px;overflow-y:auto}
 .stbtn{padding:14px 0;background:#1d6f42;color:white;border:none;cursor:pointer;border-radius:9px;font-size:15px;font-weight:500;width:100%;transition:background .15s}.stbtn:hover{background:#155131}
@@ -240,7 +240,7 @@ html,body{height:100%;background:var(--bp);color:var(--cp);font-family:var(--fon
       <button class="sort-btn" id="sb-점수↑" onclick="setRevSort('점수↑')">점수 낮은순</button>
       <button class="sort-btn" id="sb-점수↓" onclick="setRevSort('점수↓')">점수 높은순</button>
     </div>
-    <div class="rth"><div>#</div><div>팀명 / 팀원</div><div>캠퍼스</div><div style="text-align:center">학년</div><div style="text-align:center">문항</div><div style="text-align:center">시간</div><div style="text-align:center">점수</div><div style="text-align:center">상태</div></div>
+    <div class="rth"><div>#</div><div>팀명 / 팀원</div><div>캠퍼스</div><div style="text-align:center">학년</div><div style="text-align:center">문항</div><div style="text-align:center">시간</div><div style="text-align:center">점수</div><div style="text-align:center">상태</div><div style="text-align:center">방식</div></div>
     <div class="rtbd" id="revList"></div>
   </div>
   <div style="display:flex;gap:8px;margin-top:12px">
@@ -801,10 +801,10 @@ function renderReview(){
   // 통계
   const grades={},probs={};
   queue.forEach(q=>{grades[q.grade]=(grades[q.grade]||0)+1;probs[q.problem+'번']=(probs[q.problem+'번']||0)+1;});
-  const topGr=Object.entries(grades).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k,v])=>`${k} ${v}명`).join(', ');
+  const topGr=Object.entries(grades).sort((a,b)=>{const o=GR_ORDER;const ai=o.indexOf(a[0])>=0?o.indexOf(a[0]):99,bi=o.indexOf(b[0])>=0?o.indexOf(b[0]):99;return ai-bi;}).map(([k,v])=>`${k} ${v}명`).join(', ');
   const topPr=Object.entries(probs).sort((a,b)=>parseInt(a)-parseInt(b)).map(([k,v])=>`${k}(${v}명)`).join(' ');
   const doneCnt=queue.filter(q=>q.status2==='done').length;
-  document.getElementById('statGrid').innerHTML=`<div class="sb"><div class="sbn">${tot}</div><div class="sbl">전체 접수</div></div><div class="sb"><div class="sbn" style="color:var(--cg)">${doneCnt}</div><div class="sbl">채점 완료</div></div><div class="sb"><div class="sbn" style="font-size:14px;margin-top:4px">${topGr||'-'}</div><div class="sbl">학년 분포</div></div><div class="sb"><div class="sbn" style="font-size:12px;margin-top:6px">${topPr||'-'}</div><div class="sbl">문항 분포</div></div>`;
+  document.getElementById('statGrid').innerHTML=`<div class="sb"><div class="sbn">${tot}</div><div class="sbl">전체 접수</div></div><div class="sb"><div class="sbn" style="color:var(--cg)">${doneCnt}</div><div class="sbl">채점 완료</div></div><div class="sb"><div class="sbn" style="font-size:11px;margin-top:4px;line-height:1.6">${topGr||'-'}</div><div class="sbl">학년 분포</div></div><div class="sb"><div class="sbn" style="font-size:12px;margin-top:6px">${topPr||'-'}</div><div class="sbl">문항 분포</div></div>`;
 
   // 정렬 버튼 활성화
   ['접수순','학년순','점수↑','점수↓'].forEach(s=>{
