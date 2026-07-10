@@ -690,7 +690,7 @@ let PD={
 const HMAP={'접수일':'date','신청일':'date','브랜드':'brand','캠퍼스':'campus','캠퍼스명':'campus','학년':'grade','팀명':'teamName','팀원':'members','발표 문제':'problem','발표문제':'problem','발표 문항':'problem','발표문항':'problem','대표 문항':'problem','대표문항':'problem','영상주소':'url','영상 주소':'url','영상url':'url','영상URL':'url','영상 URL':'url','영상링크':'url','동영상주소':'url','동영상URL':'url','비디오URL':'url','영상시간':'url','시간':'duration','영상 시간':'duration','발표시간':'duration','발표 시간':'duration','영상길이':'duration','재생시간':'duration','좋아요 수':'likes','좋아요수':'likes','접수상태':'status','심사상태':'status'};
 
 // ── 상태 ──────────────────────────────────────────────────────
-const SC={concept:10,term:10,time:0,acc:10,logic:0,board:0,speak:0,ex:0,eng:0,peer:0};
+const SC={concept:8,term:8,time:0,acc:8,logic:0,board:0,speak:0,ex:0,eng:0,peer:0};
 let aiReasons={r1:'',r2:'',r3:'',fb1:'',fb2:'',fb3:''};
 let queue=[],curI=-1,cGr='중1',cPr=1;
 let capturedFrames=[]; // base64 strings (null = CORS failed)
@@ -1850,6 +1850,9 @@ ${peerPersona}
 
 ⚠️ 예시 변별 원칙: 음성 전사 또는 판서에서 "문제 풀이 범위 밖의 추가 예시"가 명시적으로 확인될 때만 7점 이상. 확인 안 되면 5~6점. 막연한 인상으로 7점 이상 금지.
 
+[영상 캡처 없는 경우 상한 제한 — 필수 적용]
+${visionUsed?'':'⚠️ 이 채점은 영상 캡처 없이 음성 전사 텍스트만으로 진행합니다. 시각적 발표 요소(표정·제스처·판서 스타일·청중 반응) 직접 확인 불가. 다음 상한을 반드시 준수하세요:\n  · 흥미유발: 최대 7점 (발표 분위기·표현력 확인 불가)\n  · 또래이해: 최대 7점 (청중 반응 확인 불가)\n  · 음성 전사에서 구체적 흥미 요소·쉬운 풀이 근거가 명확히 확인될 때만 최대 7점, 그 외 5~6점'}
+
 ━━ ② 또래학생 페르소나 — 흥미유발 채점 기준 (${cGr} 학생 관점) ━━
 10점: ${isElem?'초등':'중학생'} 청중을 끌어당기는 요소 명확 + "오, 그렇구나!" 반응이 나올 만한 발견 순간 포함
 9점 : 흥미 유발 요소 1~2개 포함, ${isElem?'초등':'중학'}생 기준 인상적, 예상 밖 결과로 흥미 자극
@@ -2172,7 +2175,7 @@ function syncTotals(){
   document.getElementById('fs2').innerHTML=`${s2}<span style="font-size:11px;color:var(--cs)">/30</span>`;
   document.getElementById('fs3').innerHTML=`${s3}<span style="font-size:11px;color:var(--cs)">/20</span>`;
   document.getElementById('fs4').innerHTML=`${s4}<span style="font-size:11px;color:var(--cs)">/30</span>`;
-  const grd=tot>=90?'최우수':tot>=80?'우수':tot>=70?'장려':'참가';
+  const grd=tot>=90?'최우수':tot>=84?'우수':tot>=74?'장려':'참가';
   const clr=tot>=90?'var(--cg)':tot>=70?'var(--ci)':'var(--cs)';
   document.getElementById('fsTot').textContent=tot;document.getElementById('fsTot').style.color=clr;
   document.getElementById('fsGrd').textContent=grd;document.getElementById('fsGrd').style.color=clr;
@@ -2243,7 +2246,7 @@ function doXL(){
       '예시':r.scores.예시,'흥미유발':r.scores.흥미유발,'또래이해':r.scores.또래이해,'창의성계':r.totals.창의성,
       'AI수학교사피드백':r.reasons.fb1||'','AI또래학생피드백':r.reasons.fb2||'','AI발표코치피드백':r.reasons.fb3||'',
       '실제재생시간':r.durInfo||'','총점':r.totals.총점,
-      '등급':r.totals.총점>=90?'최우수':r.totals.총점>=80?'우수':r.totals.총점>=70?'장려':'참가','심사일시':r.ts
+      '등급':r.totals.총점>=90?'최우수':r.totals.총점>=84?'우수':r.totals.총점>=74?'장려':'참가','심사일시':r.ts
     };
   });
   const ws=XLSX.utils.json_to_sheet(rows);
@@ -2252,7 +2255,7 @@ function doXL(){
   const gm={최우수:0,우수:0,장려:0,참가:0};
   queue.forEach(q=>{if(q.result){const g=q.result.totals.총점>=90?'최우수':q.result.totals.총점>=80?'우수':q.result.totals.총점>=70?'장려':'참가';gm[g]++;}});
   const dq=queue.filter(q=>q.result);
-  const sm=[{'항목':'전체 접수','값':queue.length},{'항목':'채점 완료','값':done.length},{'항목':'미완료','값':queue.length-done.length},{'항목':'','값':''},{'항목':'최우수 (90↑)','값':gm.최우수},{'항목':'우수 (80~89)','값':gm.우수},{'항목':'장려 (70~79)','값':gm.장려},{'항목':'참가 (70↓)','값':gm.참가}];
+  const sm=[{'항목':'전체 접수','값':queue.length},{'항목':'채점 완료','값':done.length},{'항목':'미완료','값':queue.length-done.length},{'항목':'','값':''},{'항목':'최우수 (90↑)','값':gm.최우수},{'항목':'우수 (84~89)','값':gm.우수},{'항목':'장려 (74~83)','값':gm.장려},{'항목':'참가 (74↓)','값':gm.참가}];
   if(dq.length)sm.push({'항목':'','값':''},{'항목':'평균 총점','값':Math.round(dq.reduce((a,q)=>a+q.result.totals.총점,0)/dq.length)},{'항목':'Vision채점 건수','값':dq.filter(q=>q.result.visionUsed).length});
   const ws2=XLSX.utils.json_to_sheet(sm);ws2['!cols']=[{wch:20},{wch:10}];XLSX.utils.book_append_sheet(wb,ws2,'집계요약');
   const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
