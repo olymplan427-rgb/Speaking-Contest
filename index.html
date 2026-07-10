@@ -687,7 +687,7 @@ let PD={
 // localStorage에 저장된 문제 데이터 불러오기 (없으면 기본값 유지)
 (function(){try{const s=localStorage.getItem('mathJudgePD');if(s){const d=JSON.parse(s);if(d&&typeof d==='object')Object.assign(PD,d);}}catch(e){}})();
 
-const HMAP={'접수일':'date','신청일':'date','브랜드':'brand','캠퍼스':'campus','캠퍼스명':'campus','학년':'grade','팀명':'teamName','팀원':'members','발표 문제':'problem','발표문제':'problem','발표 문항':'problem','발표문항':'problem','대표 문항':'problem','대표문항':'problem','영상주소':'url','영상 주소':'url','영상url':'url','영상시간':'duration','영상 시간':'duration','발표시간':'duration','좋아요 수':'likes','좋아요수':'likes','접수상태':'status','심사상태':'status'};
+const HMAP={'접수일':'date','신청일':'date','브랜드':'brand','캠퍼스':'campus','캠퍼스명':'campus','학년':'grade','팀명':'teamName','팀원':'members','발표 문제':'problem','발표문제':'problem','발표 문항':'problem','발표문항':'problem','대표 문항':'problem','대표문항':'problem','영상주소':'url','영상 주소':'url','영상url':'url','영상URL':'url','영상 URL':'url','영상링크':'url','동영상주소':'url','동영상URL':'url','비디오URL':'url','영상시간':'duration','영상 시간':'duration','발표시간':'duration','발표 시간':'duration','영상길이':'duration','재생시간':'duration','좋아요 수':'likes','좋아요수':'likes','접수상태':'status','심사상태':'status'};
 
 // ── 상태 ──────────────────────────────────────────────────────
 const SC={concept:10,term:10,time:0,acc:10,logic:0,board:0,speak:0,ex:0,eng:0,peer:0};
@@ -763,7 +763,11 @@ function parseXL(inp){
       const pn=parseInt((g('problem').match(/\d+/)||['1'])[0])||1;
       const ds=timeToSec(g('duration'));
       const mem=g('members'),tn=g('teamName');
-      queue.push({id:i+1,date:g('date'),brand:g('brand'),campus:g('campus'),grade:g('grade')||'중1',teamName:tn||`팀${i+1}`,members:mem||tn,problem:pn,url:g('url'),duration:g('duration'),durationSec:ds,likes:g('likes'),status:g('status'),type:(mem&&mem!==tn&&mem.length>tn.length)?'팀':'개인',status2:'pending'});
+      let rawUrl=g('url'),rawDur=g('duration');
+      // duration에 URL이 잘못 들어온 경우 자동 교체
+      if(rawDur.startsWith('http')&&!rawUrl){rawUrl=rawDur;rawDur='';}
+      const ds2=timeToSec(rawDur);
+      queue.push({id:i+1,date:g('date'),brand:g('brand'),campus:g('campus'),grade:g('grade')||'중1',teamName:tn||`팀${i+1}`,members:mem||tn,problem:pn,url:rawUrl,duration:rawDur,durationSec:ds2,likes:g('likes'),status:g('status'),type:(mem&&mem!==tn&&mem.length>tn.length)?'팀':'개인',status2:'pending'});
     });
     inp.value='';svTmp();showView('v2');
   };
