@@ -2175,7 +2175,7 @@ function syncTotals(){
   document.getElementById('fs2').innerHTML=`${s2}<span style="font-size:11px;color:var(--cs)">/30</span>`;
   document.getElementById('fs3').innerHTML=`${s3}<span style="font-size:11px;color:var(--cs)">/20</span>`;
   document.getElementById('fs4').innerHTML=`${s4}<span style="font-size:11px;color:var(--cs)">/30</span>`;
-  const grd=tot>=90?'최우수':tot>=84?'우수':tot>=74?'장려':'참가';
+  const grd=tot>=90?'최우수':tot>=80?'우수':tot>=70?'장려':'참가';
   const clr=tot>=90?'var(--cg)':tot>=70?'var(--ci)':'var(--cs)';
   document.getElementById('fsTot').textContent=tot;document.getElementById('fsTot').style.color=clr;
   document.getElementById('fsGrd').textContent=grd;document.getElementById('fsGrd').style.color=clr;
@@ -2246,7 +2246,7 @@ function doXL(){
       '예시':r.scores.예시,'흥미유발':r.scores.흥미유발,'또래이해':r.scores.또래이해,'창의성계':r.totals.창의성,
       'AI수학교사피드백':r.reasons.fb1||'','AI또래학생피드백':r.reasons.fb2||'','AI발표코치피드백':r.reasons.fb3||'',
       '실제재생시간':r.durInfo||'','총점':r.totals.총점,
-      '등급':r.totals.총점>=90?'최우수':r.totals.총점>=84?'우수':r.totals.총점>=74?'장려':'참가','심사일시':r.ts
+      '등급':r.totals.총점>=90?'최우수':r.totals.총점>=80?'우수':r.totals.총점>=70?'장려':'참가','심사일시':r.ts
     };
   });
   const ws=XLSX.utils.json_to_sheet(rows);
@@ -2255,7 +2255,7 @@ function doXL(){
   const gm={최우수:0,우수:0,장려:0,참가:0};
   queue.forEach(q=>{if(q.result){const g=q.result.totals.총점>=90?'최우수':q.result.totals.총점>=80?'우수':q.result.totals.총점>=70?'장려':'참가';gm[g]++;}});
   const dq=queue.filter(q=>q.result);
-  const sm=[{'항목':'전체 접수','값':queue.length},{'항목':'채점 완료','값':done.length},{'항목':'미완료','값':queue.length-done.length},{'항목':'','값':''},{'항목':'최우수 (90↑)','값':gm.최우수},{'항목':'우수 (84~89)','값':gm.우수},{'항목':'장려 (74~83)','값':gm.장려},{'항목':'참가 (74↓)','값':gm.참가}];
+  const sm=[{'항목':'전체 접수','값':queue.length},{'항목':'채점 완료','값':done.length},{'항목':'미완료','값':queue.length-done.length},{'항목':'','값':''},{'항목':'최우수 (90↑)','값':gm.최우수},{'항목':'우수 (80~89)','값':gm.우수},{'항목':'장려 (70~79)','값':gm.장려},{'항목':'참가 (70↓)','값':gm.참가}];
   if(dq.length)sm.push({'항목':'','값':''},{'항목':'평균 총점','값':Math.round(dq.reduce((a,q)=>a+q.result.totals.총점,0)/dq.length)},{'항목':'Vision채점 건수','값':dq.filter(q=>q.result.visionUsed).length});
   const ws2=XLSX.utils.json_to_sheet(sm);ws2['!cols']=[{wch:20},{wch:10}];XLSX.utils.book_append_sheet(wb,ws2,'집계요약');
   const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
