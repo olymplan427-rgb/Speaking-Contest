@@ -731,10 +731,10 @@ let PD={
 // localStorage에 저장된 문제 데이터 불러오기 (없으면 기본값 유지)
 (function(){try{const s=localStorage.getItem('mathJudgePD');if(s){const d=JSON.parse(s);if(d&&typeof d==='object')Object.assign(PD,d);}}catch(e){}})();
 
-const HMAP={'접수일':'date','신청일':'date','브랜드':'brand','캠퍼스':'campus','캠퍼스명':'campus','학년':'grade','팀명':'teamName','팀원':'members','발표 문제':'problem','발표문제':'problem','발표 문항':'problem','발표문항':'problem','대표 문항':'problem','대표문항':'problem','영상주소':'url','영상 주소':'url','영상url':'url','영상시간':'duration','영상 시간':'duration','발표시간':'duration','좋아요 수':'likes','좋아요수':'likes','접수상태':'status','심사상태':'status'};
+const HMAP={'접수일':'date','신청일':'date','브랜드':'brand','캠퍼스':'campus','캠퍼스명':'campus','학년':'grade','팀명':'teamName','팀원':'members','발표 문제':'problem','발표문제':'problem','발표 문항':'problem','발표문항':'problem','대표 문항':'problem','대표문항':'problem','영상주소':'url','영상 주소':'url','영상url':'url','영상URL':'url','영상 URL':'url','영상링크':'url','동영상주소':'url','동영상URL':'url','비디오URL':'url','영상시간':'url','시간':'duration','영상 시간':'duration','발표시간':'duration','발표 시간':'duration','영상길이':'duration','재생시간':'duration','좋아요 수':'likes','좋아요수':'likes','접수상태':'status','심사상태':'status'};
 
 // ── 상태 ──────────────────────────────────────────────────────
-const SC={concept:10,term:10,time:0,acc:10,logic:0,board:0,speak:0,ex:0,eng:0,peer:0};
+const SC={concept:8,term:8,time:0,acc:8,logic:0,board:0,speak:0,ex:0,eng:0,peer:0};
 let aiReasons={r1:'',r2:'',r3:'',fb1:'',fb2:'',fb3:''};
 let queue=[],curI=-1,cGr='중1',cPr=1;
 let capturedFrames=[]; // base64 strings (null = CORS failed)
@@ -806,9 +806,11 @@ function parseXL(inp){
     rows.slice(1).filter(r=>r.some(c=>c!=='')).forEach((r,i)=>{
       const g=k=>ci[k]!==undefined?String(r[ci[k]]||'').trim():'';
       const pn=parseInt((g('problem').match(/\d+/)||['1'])[0])||1;
-      const ds=timeToSec(g('duration'));
       const mem=g('members'),tn=g('teamName');
-      queue.push({id:i+1,date:g('date'),brand:g('brand'),campus:g('campus'),grade:g('grade')||'중1',teamName:tn||`팀${i+1}`,members:mem||tn,problem:pn,url:g('url'),duration:g('duration'),durationSec:ds,likes:g('likes'),status:g('status'),type:(mem&&mem!==tn&&mem.length>tn.length)?'팀':'개인',status2:'pending'});
+      let rawUrl=g('url'),rawDur=g('duration');
+      if(rawDur.startsWith('http')&&!rawUrl){rawUrl=rawDur;rawDur='';}
+      const ds2=timeToSec(rawDur);
+      queue.push({id:i+1,date:g('date'),brand:g('brand'),campus:g('campus'),grade:g('grade')||'중1',teamName:tn||`팀${i+1}`,members:mem||tn,problem:pn,url:rawUrl,duration:rawDur,durationSec:ds2,likes:g('likes'),status:g('status'),type:(mem&&mem!==tn&&mem.length>tn.length)?'팀':'개인',status2:'pending'});
     });
     inp.value='';svTmp();showView('v2');
   };
@@ -846,10 +848,10 @@ function renderReview(){
   // 통계
   const grades={},probs={};
   queue.forEach(q=>{grades[q.grade]=(grades[q.grade]||0)+1;probs[q.problem+'번']=(probs[q.problem+'번']||0)+1;});
-  const topGr=Object.entries(grades).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k,v])=>`${k} ${v}명`).join(', ');
+  const topGr=Object.entries(grades).sort((a,b)=>{const o=GR_ORDER;const ai=o.indexOf(a[0])>=0?o.indexOf(a[0]):99,bi=o.indexOf(b[0])>=0?o.indexOf(b[0]):99;return ai-bi;}).map(([k,v])=>`${k} ${v}명`).join(', ');
   const topPr=Object.entries(probs).sort((a,b)=>parseInt(a)-parseInt(b)).map(([k,v])=>`${k}(${v}명)`).join(' ');
   const doneCnt=queue.filter(q=>q.status2==='done').length;
-  document.getElementById('statGrid').innerHTML=`<div class="sb"><div class="sbn">${tot}</div><div class="sbl">전체 접수</div></div><div class="sb"><div class="sbn" style="color:var(--cg)">${doneCnt}</div><div class="sbl">채점 완료</div></div><div class="sb"><div class="sbn" style="font-size:14px;margin-top:4px">${topGr||'-'}</div><div class="sbl">학년 분포</div></div><div class="sb"><div class="sbn" style="font-size:12px;margin-top:6px">${topPr||'-'}</div><div class="sbl">문항 분포</div></div>`;
+  document.getElementById('statGrid').innerHTML=`<div class="sb"><div class="sbn">${tot}</div><div class="sbl">전체 접수</div></div><div class="sb"><div class="sbn" style="color:var(--cg)">${doneCnt}</div><div class="sbl">채점 완료</div></div><div class="sb"><div class="sbn" style="font-size:11px;margin-top:4px;line-height:1.6">${topGr||'-'}</div><div class="sbl">학년 분포</div></div><div class="sb"><div class="sbn" style="font-size:12px;margin-top:6px">${topPr||'-'}</div><div class="sbl">문항 분포</div></div>`;
 
   // 정렬 버튼 활성화
   ['접수순','학년순','점수↑','점수↓'].forEach(s=>{
@@ -1678,23 +1680,39 @@ ${gradeCtx}
 - 3~4점: 미흡, 하위 30% 수준
 - 0~2점: 현저히 부족
 
-[고득점 앙커 — 총점 85점 이상 (상위 5%)]
-개념: 해당 학년 교육과정 내 핵심 개념을 전 과정에서 일관되게 활용 + 심화 연결 → 9점
-용어: 필수용어 100% 구두 사용, 풀이 맥락에 자연스럽게 녹임 → 9점
-정확성: 오류 없음 + 해당 학년 기준 수학적으로 엄밀 → 9점
-논리성: 도입→전개→결론 완벽 연결 → 9점
+[고득점 앙커 — 총점 83점 이상 (상위 5%) — 9회 수상자 실제 사례 기반]
+※ 아래는 9회 대회 상위 입상자의 실제 발표 패턴에서 추출한 기준입니다.
+
+▶ 개념·용어 9점 사례
+- 외심/내심: "외심은 삼각형의 세 변의 수직이등분선의 교점으로, 세 꼭짓점까지의 거리가 모두 같습니다" → 이 성질을 직접 풀이에 대입하여 56도→28도→62도를 단계적으로 도출 (중2, 4번)
+- 규칙과 대응: "대응관계란 두 양 사이에서 한 양이 일정하게 변함에 따라 다른 양도 일정하게 변하는 것" → 탁자·의자 표 작성 후 일반식(2×□×4+2) 도출까지 연결 (초5, 2번)
+- 문자화식: "수 또는 문자의 곱으로 이루어진 식을 항, 문자 없이 수만으로 이루어진 식을 상수항, 동류항끼리 계산" → 21a+14 도출 (중1, 2번)
+- 각기둥/각뿔: "밑면의 변의 수를 n으로 나타내 모서리·꼭짓점·면의 개수 공식을 먼저 정리 후 조건 대입" → 팔각기둥 결론 도출 (초6, 2번)
+- 9~10점 핵심: 개념을 먼저 정의하고 → 성질/공식을 열거하고 → 풀이의 각 단계에서 해당 성질을 직접 인용하며 → 숫자 결론까지 완성
+
+▶ 논리성·정확성 9점 사례 (증명/이유 명시 패턴)
+- "삼각형 BOD와 COD는 SAS 합동이 됩니다. 따라서 OD가 BC를 수직이등분한다는 것을 알 수 있습니다" (합동 → 성질 적용 단계 명시)
+- "이등변삼각형이므로 각 B = 각 C → 각 C = (180-68)÷2 = 56도 → 내심 성질로 절반 = 28도 → 외심 수선으로 직각 90도 → 90-28 = 62도" (각 단계에 근거 제시)
+- "2x+1 = 101이므로 2x = 100, x = 50" (수식 전개 각 단계 명시)
+- 9점 핵심: "왜냐하면", "이므로", "따라서" 등 인과 표현을 통해 각 단계가 반드시 이전 단계에서 필연적으로 이어짐. 청중이 다음 단계를 예측 가능.
+
+▶ 고득점 보너스 패턴 (창의·전달력 가산 요소)
+- 복수 풀이법 제시: 같은 답을 서로 다른 접근으로 도출 (초5 허소윤: "5-4-4-5 패턴법" + "4로 통일 후 보정법" / 초5 김지유: "겹치는 면 제외법" + "전체-빼기법")
+- 실생활 연결: 외심→레오나르도 다빈치 비트루비우스/루브르 피라미드, 소수나눗셈→떡볶이 레시피 역할극, 대응관계→자전거 바퀴수
+- 마무리 핵심 요약: "이 공식만 기억하면 탁자가 7개든 700개든 구할 수 있습니다"처럼 한 문장 결론 강조
+- 역할극/대화형: 토크쇼 진행 형식("가은님 외심을 설명해주세요"), 문답 형식으로 청중 참여 유도
 
 [중간 앙커 — 총점 65~72점 (평균권)]
-개념: 방향은 맞으나 일부 구간에서 개념 연결 약함 → 6~7점
-용어: 필수용어 60~70% 사용, 핵심 1~2개 누락 → 5~6점
-정확성: 풀이 방향 맞으나 표현 오류 1개 → 6~7점
-논리성: 전체 흐름은 있으나 연결 설명 생략 구간 있음 → 6~7점
+개념: 개념 정의는 있으나 풀이 과정에서 해당 개념을 직접 인용하지 않음 → 6~7점
+용어: 필수용어 60~70% 구두 사용, 핵심 1~2개 누락 → 5~6점
+정확성: 풀이 방향은 맞으나 중간 단계 설명 생략 → 6~7점
+논리성: 전체 흐름은 있으나 "왜 그렇게 되는지" 근거 없이 결론으로 넘어가는 구간 있음 → 6~7점
 
 [저득점 앙커 — 총점 50점대 (하위 30%)]
-개념: 핵심 개념 피상적 활용 또는 불일치 → 4~5점
+개념: 개념 명칭만 언급, 정의·성질 없음 또는 풀이에 활용 안 됨 → 4~5점
 용어: 필수용어 50% 미만 사용 → 3~4점
-정확성: 계산 오류가 결론에 영향 → 4~5점
-논리성: 단계 생략 다수, 흐름 단편적 → 3~4점
+정확성: 계산 오류가 결론에 영향 또는 핵심 풀이 포인트 누락 → 4~5점
+논리성: 단계 생략 다수, 결론만 언급하고 과정 없음 → 3~4점
 
 ━━ 개념선정 채점 기준 ━━
 10점: 해당 학년 교육과정의 핵심 개념 정확 선정 + 풀이 전 과정에서 중심축으로 활용 + 심화 연결 자연스럽게 포함
@@ -1783,6 +1801,13 @@ JSON만 응답:
 5~6점: 판서 완료 후에도 계속 판서 쪽 응시, 또는 메모 참조 동작 1~2회 명확히 관찰
 3~4점: 대부분 판서·메모 의존, 카메라 응시 거의 없음, 메모 읽기 3회 이상 확인
 0~2점: 대본 낭독 수준, 발표자다운 전달 없음
+
+[마스크 착용 감점 규칙 — 필수 적용]
+⚠️ 발표자가 마스크(황사마스크·수술용마스크·KF94 등 입과 코를 가리는 마스크)를 착용한 경우:
+  · 말하기 최대 점수를 6점으로 제한 (마스크 착용 상태에서는 구강 동작·표정 확인 불가)
+  · 선글라스·안경·모자는 감점 대상 아님 — 입·코를 가리는 마스크류만 해당
+  · 캡처 이미지에서 직접 확인된 경우에만 적용 (추정 금지)
+  · 마스크 착용 확인 시 말하기이유에 "마스크 착용 확인으로 최대 6점 제한 적용" 명시
 
 [말하기 핵심 해석 규칙]
 ▶ 시선이 판서 쪽 + 손·팔 움직임 있음 → 판서 중 정상 행동, 의존도 아님, 절대 감점 불가
